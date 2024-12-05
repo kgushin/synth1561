@@ -34,7 +34,7 @@ def save_preset(preset: dict):
     """
 
 
-def load_preset(filename: string) -> dict:
+def load_preset(filename: str) -> dict:
     """
     Загружает набор параметров синтеза из файла
     """
@@ -68,4 +68,12 @@ def normalize(samples: list, bits_per_sample = 16) -> list:
     :param samples: массив значений семплов
     :return:
     """
-    return result
+    if abs(min(samples)) > max(samples):
+        max_samples = abs(min(samples))
+    else:
+        max_samples = max(samples)
+    normalize_multiplier = ( 2 ** (bits_per_sample - 1) - 1) / max_samples
+    normalized_samples = []
+    for sample in samples:
+        normalized_samples.append(int(sample * normalize_multiplier))
+    return normalized_samples
