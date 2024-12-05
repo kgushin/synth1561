@@ -46,14 +46,21 @@ def modulate_amp(base: list, mod: list) -> list:
     Модулирует базовый сигнал набором значений амплитуды
     """
     return result
-
-
+set_of_sample_lists = []
 def mix(sets: list) -> list:
     """
     Смешивает заданные массивы семплов путем почленного суммирования
     """
+
     return result
 
+def test_mix():
+    set_of_sample_lists1 = [[0, 0.1, 1, -0.1, -1], [1, 2, 4, 8, 16]]
+    mixed_sets = mix(sets1)
+    if mixed_sets == [0, 0.2, 4, -0.8, -16]:
+        print('SUCCESS')
+    else:
+        print('FAILURE')
 
 def apply_envelope(samples: list, envelope: list) -> list:
     """
