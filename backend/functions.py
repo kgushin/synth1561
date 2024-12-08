@@ -34,7 +34,7 @@ def save_preset(preset: dict):
     """
 
 
-def load_preset(filename: string) -> dict:
+def load_preset(filename: str) -> dict:
     """
     Загружает набор параметров синтеза из файла
     """
@@ -58,14 +58,43 @@ def mix(sets: list) -> list:
 def apply_envelope(samples: list, envelope: list) -> list:
     """
     Применяет заданную огибающую к набору семплов
+    :param envelope: Список кортежей вида (Tn, An), упорядоченный по возрастанию Tn (Tn >= 0). Первый и последний
+        кортеж в наборе соответствуют моменту времени (0) и окончанию звучания.
     """
-    return result
+    wave_time = len(samples) / 44100 #44100 = Sample Rate
+    SaWAppEnv = [] #Samples with applied envelope
+    segm_no = 1
+
+    for sample_no in range(len(samples)):
+        current_time = sample_no/44100
+        if envelope[segm_no - 1][0] > current_time > envelope[segm_no][0]:
+            if segm_no < len(envelope):
+                segm_no += 1
+        amplitude = (current_time - envelope[segm_no - 1][0]) * (envelope[segm_no][1] - envelope[segm_no - 1][1])\
+            / (envelope[segm_no][0] - envelope[segm_no - 1][0])
+        SaWAppEnv.append(samples[sample_no] * amplitude)
+    return SaWAppEnv
+
 
 
 def normalize(samples: list, bits_per_sample = 16) -> list:
     """
     Нормализует значения семплов в соответствии с разрядностью звукового устройства
     :param samples: массив значений семплов
+    :param bits_per_sample: разрядность звукового устройства
     :return:
     """
-    return result
+    if abs(min(samples)) > max(samples):
+        max_sample = abs(min(samples))
+    else:
+        max_sample = max(samples)
+
+    maximum = 2 ** (bits_per_sample - 1) - 1
+    multiplier = maximum / max_sample
+
+    normalized = []
+    for sample in samples:
+        normalized.append(int(sample * multiplier))
+    return normalized
+
+
