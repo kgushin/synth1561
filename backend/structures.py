@@ -4,17 +4,19 @@ synth_params = {}
 """
 Параметры синтеза
 Словарь, содержащий данные для синтеза
+:key duration:
 :key tones:
 :key effects:
 Пример:
 synth_params = {
-    "base_tone": {"freq": 440, "amp": 1, "phase": 0},
+    "duration": 10,
     "harmonics": [
-        {"factor": 2, "amp": 0.3, "phase": 0.2},
-        {"factor": 3, "amp": 0.1, "phase": 0},
-        {"factor": 2, "amp": 0.5, "phase": 0.1}
+        {"base": 0, "factor": 2, "amp": 0.3, "phase": 0.2},
+        {"base": 0, "factor": 3, "amp": 0.1, "phase": 0},
+        {"base": 0, "factor": 2, "amp": 0.5, "phase": 0.1}
     ],
     "tones": [
+        {"freq": 440, "amp": 1, "phase": 0},
         {"freq": 2, "amp": 0.1, "phase": 0}
     ],
     "effects": [
@@ -27,7 +29,7 @@ synth_params = {
 tone_params = {}
 """
 Параметры тона
-:key type: тип {"base", "harmonic", "simple"} default "simple"
+:key type: тип {"base", "harmonic"} default "base"
 :key form: форма сигнала {"sine", "square", "saw"} default "sine"
 :key freq: частота float > 0, не превосходит (SAMPLE_RATE / 2) (по теореме Котельникова)
 :key factor: множитель частоты int > 0, указывается для гармоник вместо частоты
