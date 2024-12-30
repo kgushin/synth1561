@@ -163,4 +163,7 @@ def test_synthesize():
     functions.play_sound(functions.normalize(samples))
 
 
-test_synthesize()
+def test_playback() -> object:
+    return False
+
+

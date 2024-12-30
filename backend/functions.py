@@ -44,7 +44,7 @@ def play_sound(samples: list):
     """
     samples = numpy.array(samples, dtype=numpy.int16)
     pprint.pprint(samples)
-    sounddevice.play(samples)
+    sounddevice.play(samples, blocking=True)
 
 
 def validate_params(params: dict):
@@ -75,8 +75,8 @@ def prepare_params(frontend_data: dict) -> dict:
         logger.fatal('Неверный формат входных данных: drawflow/Home/data не является словарем')
         return params
 
-    duration = 0
     params = {'tones':{}, 'effects':{}, 'duration':5}
+    # TODO длительность должна задаваться с фронтенда?
     # Собираем списки тонов и эффектов
     for node_id, node_data in frontend_data['drawflow']['Home']['data'].items():
         match node_data['class']:
@@ -130,13 +130,13 @@ def prepare_params(frontend_data: dict) -> dict:
         if tone_data['type'] == 'harmonic':
             factor = int(tone_data['factor'])
             base_id = tone_data['base']
-            params['tones'][tone_id]['freq'] = float(params['tones'][base_id]['freq']) * int(tone_data['factor'])
+            params['tones'][tone_id]['freq'] = float(params['tones'][base_id]['freq']) * factor
             # TODO Log warning if frequency is too high
 
     return params
 
 
-def save_preset(preset: str):
+def save_preset(preset: str, filename: str):
     """
     Сохраняет заданный набор параметров синтеза в файл
     """
