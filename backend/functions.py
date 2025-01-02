@@ -55,30 +55,49 @@ def validate_params(params: dict):
     return result
 
 
-def prepare_params(frontend_data: dict) -> dict:
+def prepare_params(frontend_data: dict) -> tuple:
     """
     Подготавливает параметры синтеза для операции синтеза
     :param frontend_data: структура данных, полученная с фронтенда (в распакованном виде)
     :return: подготовленная структура synth_params
     """
+    status = 'error'
     params = {}
+    messages = {
+        "info": [],
+        "warn": [],
+        "error": [],
+        "critical": []
+    }
     if 'drawflow' not in frontend_data:
-        logger.fatal('Неверный формат входных данных: отсутствует раздел drawflow')
-        return params
+        messages["critical"].append('Неверный формат входных данных: отсутствует раздел drawflow')
+        return status, messages, params
     if 'Home' not in frontend_data['drawflow']:
-        logger.fatal('Неверный формат входных данных: отсутствует раздел drawflow/Home')
-        return params
+        messages["critical"].append('Неверный формат входных данных: отсутствует раздел drawflow/Home')
+        return status, messages, params
     if 'data' not in frontend_data['drawflow']['Home']:
-        logger.fatal('Неверный формат входных данных: отсутствует раздел drawflow/Home/data')
-        return params
+        messages["critical"].append('Неверный формат входных данных: отсутствует раздел drawflow/Home/data')
+        return status, messages, params
     if not isinstance(frontend_data['drawflow']['Home']['data'], dict):
-        logger.fatal('Неверный формат входных данных: drawflow/Home/data не является словарем')
-        return params
+        messages["critical"].append('Неверный формат входных данных: drawflow/Home/data не является словарем')
+        return status, messages, params
 
     params = {'tones':{}, 'effects':{}, 'duration':5}
+    num_endpoints = 0
     # TODO длительность должна задаваться с фронтенда?
     # Собираем списки тонов и эффектов
     for node_id, node_data in frontend_data['drawflow']['Home']['data'].items():
+        if str(int(node_id)) != node_id:
+            messages["error"].append('Неизвестный ключ словаря drawflow/Home/data: ' + node_id)
+            continue
+        if not isinstance(node_data, dict):
+            messages["error"].append('Значение узла ' + node_id + ' не является словарём')
+            continue
+        if 'class' not in node_data:
+            messages["error"].append('Узел ' + node_id + ' не имеет атрибута class')
+            continue
+
+        # TODO По-хорошему, надо обходить дерево от узла sounddevice
         match node_data['class']:
             case 'tone':
                 params['tones'][node_id] = node_data['data']
@@ -96,14 +115,19 @@ def prepare_params(frontend_data: dict) -> dict:
                         params['effects'][node_id]['input'].append(connection_data['node'])
                         # TODO one input can have multiple connections
                 if len(node_data['inputs']) == 0:
-                    logger.fatal("Не заданы входные соединения для узла " + node_id)
+                    logger.fatal("Не задано входное соединение для звукового устройства " + node_id)
             case 'sounddevice':
+                if len(node_data['inputs']['input_1']['connections']) == 0:
+                    continue;
                 params['effects'][node_id] = node_data['data']
                 params['effects'][node_id]['type'] = node_data['class']
                 params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
+                num_endpoints += 1
             case _:
-                logger.warning('Неизвестный тип узла: ' + node_data['class'] + ', id: ' + node_id)
-    #return params
+                messages["error"].append('Неизвестный тип узла: ' + node_data['class'] + ', id: ' + node_id)
+
+    if num_endpoints != 1:
+        messages["error"].append('Отсутствует узел sounddevice или таких узлов больше одного: ' + str(num_endpoints))
 
     # TODO Проверяем длительность
     '''
@@ -121,8 +145,11 @@ def prepare_params(frontend_data: dict) -> dict:
     # Приводим тип всех параметров
     # Для гармоник явно определяем частоту
     for tone_id, tone_data in params['tones'].items():
-        if 'freq' in tone_data:
-            params['tones'][tone_id]['freq'] = float(tone_data['freq'])
+        if tone_data['type'] == 'tone':
+            if 'freq' not in tone_data or tone_data['freq'] == '':
+                messages["critical"].append(f'Для узла {tone_id} не задан обязательный параметр "частота"')
+            else:
+                params['tones'][tone_id]['freq'] = float(tone_data['freq'])
         if 'amp' in tone_data:
             params['tones'][tone_id]['amp'] = float(tone_data['amp'])
         if 'phase' in tone_data:
@@ -130,10 +157,14 @@ def prepare_params(frontend_data: dict) -> dict:
         if tone_data['type'] == 'harmonic':
             factor = int(tone_data['factor'])
             base_id = tone_data['base']
-            params['tones'][tone_id]['freq'] = float(params['tones'][base_id]['freq']) * factor
-            # TODO Log warning if frequency is too high
+            freq = float(params['tones'][base_id]['freq']) * factor
+            params['tones'][tone_id]['freq'] = freq
+            if freq > 16000:
+                messages["warn"].append('Тон ' + tone_id +' имеет слишком большое значение частоты')
 
-    return params
+    if len(messages['critical']) == 0 and len(messages['error']) == 0:
+        status = 'ok'
+    return status, messages, params
 
 
 def save_preset(preset: str, filename: str):

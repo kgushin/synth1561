@@ -149,8 +149,8 @@ def test_prepare_params():
 
     ts = json.loads(t)
     pprint.pprint(ts)
-    u = functions.prepare_params(ts)
-    return u
+    res, msg, par = functions.prepare_params(ts)
+    return res
 
 
 def test_synthesize():
