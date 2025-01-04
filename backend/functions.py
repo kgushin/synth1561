@@ -91,7 +91,7 @@ def prepare_params(frontend_data: dict) -> tuple:
             messages["error"].append('Неизвестный ключ словаря drawflow/Home/data: ' + node_id)
             continue
         if not isinstance(node_data, dict):
-            messages["error"].append('Значение узла ' + node_id + ' не является словарём')
+            messages["error"].append('Данные для узла ' + node_id + ' не являются словарём')
             continue
         if 'class' not in node_data:
             messages["error"].append('Узел ' + node_id + ' не имеет атрибута class')

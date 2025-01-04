@@ -44,19 +44,26 @@
 
       </div>
       <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
-
-		    <div class="btn-play" onclick="backend_play()">Play</div>
-        <div class="btn-dev" onclick="backend_dev()">Dev</div>
-        <div class="btn-export" onclick="backend_save_preset()">Сохранить</div>
-        <div class="btn-clear" onclick="editor.clearModuleSelected()">Очистить</div>
+        <div class="ctrl-btn btn-dev" onclick="backend_dev()">Dev</div>
+        <div class="ctrl-btn btn-export" onclick="backend_save_preset()">Сохранить</div>
+        <div class="ctrl-btn btn-clear" onclick="editor.clearModuleSelected()">Очистить</div>
+        <div class="bar-file">
+          <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected()"></i>
+          <i class="fas fa-file-download" title="Загрузить" onclick=""></i>
+          <i class="fas fa-file-upload" title="Сохранить" onclick="backend_save_preset()"></i>
+        </div>
+        <div class="bar-cmd">
+          <i class="fas fa-heartbeat" title="Проверить схему" onclick="backend_dev(this)"></i>
+          <i class="fas fa-play" title="Синтезировать звук" onclick="backend_play()"></i>
+        </div>
         <div class="btn-lock">
-          <i id="lock" class="fas fa-lock" onclick="editor.editor_mode='fixed'; changeMode('lock');"></i>
-          <i id="unlock" class="fas fa-lock-open" onclick="editor.editor_mode='edit'; changeMode('unlock');" style="display:none;"></i>
+          <i id="lock" class="fas fa-lock-open" title="Редактирование разрешено" onclick="editor.editor_mode='fixed'; changeMode('lock');"></i>
+          <i id="unlock" class="fas fa-lock" title="Редактирование запрещено" onclick="editor.editor_mode='edit'; changeMode('unlock');" style="display:none;"></i>
         </div>
         <div class="bar-zoom">
-          <i class="fas fa-search-minus" onclick="editor.zoom_out()"></i>
-          <i class="fas fa-search" onclick="editor.zoom_reset()"></i>
-          <i class="fas fa-search-plus" onclick="editor.zoom_in()"></i>
+          <i class="fas fa-search-minus" title="Уменьшить масштаб" onclick="editor.zoom_out()"></i>
+          <i class="fas fa-search" title="Масштаб по умолчанию" onclick="editor.zoom_reset()"></i>
+          <i class="fas fa-search-plus" title="Увеличить масштаб" onclick="editor.zoom_in()"></i>
         </div>
       </div>
     </div>
@@ -300,7 +307,6 @@
     }
 
     function changeMode(option) {
-
     //console.log(lock.id);
       if(option == 'lock') {
         lock.style.display = 'none';
@@ -364,7 +370,8 @@
 	  )
 	}
 
-	function backend_dev() {
+	function backend_dev(el) {
+	  console.log(el);
 	  data = editor.export();
 	  data["command"] = "check";
 	  const api_url = "{{ url_for("check_params") }}"
@@ -375,6 +382,11 @@
 	  })
 	    .then(response => response.json())
 	    .then(data => {
+	      if (data.hasOwnProperty("res") && data["res"] == 'ok') {
+	        el.style.backgroundColor = "green";
+	      } else {
+	      	el.style.backgroundColor = "red";
+	      }
 	      Swal.fire({ title: 'Ответ', html: 'Данные: <textarea>'+escapeHtml(JSON.stringify(data, null, 4))+'</textarea>'});
 	    }
 	  )

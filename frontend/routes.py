@@ -1,5 +1,4 @@
 import sys
-import json
 
 from flask import render_template
 from flask import jsonify

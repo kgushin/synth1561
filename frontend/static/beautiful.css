@@ -3,6 +3,8 @@
   --background-color: #ffffff;
 
   --background-box-title: #f7f7f7;
+  --bg-bluish-color: #4ea9ff;
+  --bg-reddish-color: #e3195a;
 }
 
 /* roboto-flex-regular - cyrillic_cyrillic-ext_greek_latin_latin-ext */
@@ -88,22 +90,21 @@ header a {
 
 .menu ul li {
   display: inline-block;
-margin-left: 10px;
-border-right: 1px solid var(--border-color);
-padding-right: 10px;
-line-height: 40px;
-cursor: pointer;
+  margin-left: 10px;
+  border-right: 1px solid var(--border-color);
+  padding-right: 10px;
+  line-height: 40px;
+  cursor: pointer;
 }
 
 .menu ul li.selected {
   font-weight: bold;
 }
 
-.btn-export {
+.ctrl-btn {
   float: right;
   position: absolute;
   top: 10px;
-  right: 10px;
   color: white;
   font-weight: bold;
   border: 1px solid #0e5ba3;
@@ -114,49 +115,26 @@ cursor: pointer;
   z-index: 5;
 }
 
+.btn-export {
+  right: 10px;
+}
+
 .btn-clear {
-  float: right;
-  position: absolute;
-  top: 10px;
   right: 100px;
-  color: white;
-  font-weight: bold;
   border: 1px solid #96015b;
   background: #e3195a;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  z-index: 5;
 }
 
 .btn-dev {
-  float: right;
-  position: absolute;
-  top: 10px;
   right: 190px;
-  color: white;
-  font-weight: bold;
   border: 1px solid #96015b;
   background: #e3195a;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  z-index: 5;
 }
 
 .btn-play {
-  float: right;
-  position: absolute;
-  top: 10px;
   right: 280px;
-  color: white;
-  font-weight: bold;
   border: 1px solid #96015b;
   background: #e3195a;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  z-index: 5;
 }
 
 .swal-wide{
@@ -176,7 +154,15 @@ cursor: pointer;
   border-radius: 4px;
   border-right: 1px solid var(--border-color);
   z-index: 5;
+}
+.btn-lock svg {
   cursor: pointer;
+  padding: 2px;
+  margin-left: 10px;
+  border-radius: 4px;
+}
+.btn-lock svg:hover {
+  background: var(--bg-bluish-color);
 }
 
 .bar-zoom {
@@ -193,16 +179,62 @@ cursor: pointer;
   border-right: 1px solid var(--border-color);
   z-index: 5;
 }
-.bar-zoom:hover {
-  background: #888888;
-}
 .bar-zoom svg {
   cursor: pointer;
-  padding-left: 10px;
+  padding: 2px;
+  margin-left: 10px;
+  border-radius: 4px;
+}
+.bar-zoom svg:hover {
+  background: var(--bg-bluish-color);
 }
 
-.bar-zoom svg:nth-child(1) {
-  padding-left: 0px;
+.bar-file {
+  float: right;
+  position: absolute;
+  bottom: 10px;
+  right: 320px;
+  display: flex;
+  font-size: 24px;
+  color: white;
+  padding: 5px 10px 5px 0px;
+  background: #555555;
+  border-radius: 4px;
+  border-right: 1px solid var(--border-color);
+  z-index: 5;
+}
+.bar-file svg {
+  cursor: pointer;
+  padding: 2px;
+  margin-left: 10px;
+  border-radius: 4px;
+}
+.bar-file svg:hover {
+  background: var(--bg-bluish-color);
+}
+
+.bar-cmd {
+  float: right;
+  position: absolute;
+  bottom: 10px;
+  right: 220px;
+  display: flex;
+  font-size: 24px;
+  color: white;
+  padding: 5px 10px 5px 0px;
+  background: #555555;
+  border-radius: 4px;
+  border-right: 1px solid var(--border-color);
+  z-index: 5;
+}
+.bar-cmd svg {
+  cursor: pointer;
+  padding: 2px;
+  margin-left: 10px;
+  border-radius: 4px;
+}
+.bar-cmd svg:hover {
+  background: var(--bg-bluish-color);
 }
 
 #drawflow {
