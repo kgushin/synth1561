@@ -3,8 +3,8 @@ import struct
 import wave
 import json
 import pprint
-#import numpy
-#import sounddevice
+import numpy
+import sounddevice
 
 import logging
 logger = logging.getLogger('')
@@ -118,7 +118,7 @@ def prepare_params(frontend_data: dict) -> tuple:
                     logger.fatal("Не задано входное соединение для звукового устройства " + node_id)
             case 'sounddevice':
                 if len(node_data['inputs']['input_1']['connections']) == 0:
-                    continue;
+                    continue
                 params['effects'][node_id] = node_data['data']
                 params['effects'][node_id]['type'] = node_data['class']
                 params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
@@ -167,11 +167,7 @@ def prepare_params(frontend_data: dict) -> tuple:
     return status, messages, params
 
 
-<<<<<<< HEAD
 def save_preset(filename: str, preset: str):
-=======
-def save_preset(preset: str, filename: str):
->>>>>>> a48d9f772721f7e3dcf53972edca678e919b529a
     """
     Сохраняет конфигурацию конструктора в файл с заданным именем
     :param filename: имя файла
@@ -197,6 +193,7 @@ def load_preset(filename: str) -> str:
     with open(filename, "rb") as f:
         preset = f.read()
     return preset.decode("utf-8")
+
 
 def generate_sine_wave(freq: float, duration: float, amp: float = 1, phase: float = 0) -> list:
     """
@@ -316,7 +313,7 @@ def process_request(frontend_data: str):
         # TODO подумать, какие ошибки собираем в логгере и когда ловим исключения
     match request_data['command']:
         case 'save_preset':
-            save_preset(frontend_data)
+            save_preset('preset.pre', frontend_data)
         case 'load_preset':
             load_preset('')
         case 'list_presets':
@@ -324,7 +321,7 @@ def process_request(frontend_data: str):
         case 'check_params':
             prepare_params(request_data)
         case 'save_wav':
-            params = prepare_params(request_data)
+            status, params, messages = prepare_params(request_data)
             samples = synthesize(params)
             write_wave('test.wav', normalize(samples))
     return False
