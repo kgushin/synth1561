@@ -3,8 +3,8 @@ import struct
 import wave
 import json
 import pprint
-import numpy
-import sounddevice
+#import numpy
+#import sounddevice
 
 import logging
 logger = logging.getLogger('')
@@ -136,10 +136,14 @@ def prepare_params(frontend_data: dict) -> dict:
     return params
 
 
-def save_preset(preset: str):
+def save_preset(filename: str, preset: str):
     """
-    Сохраняет заданный набор параметров синтеза в файл
+    Сохраняет конфигурацию конструктора в файл с заданным именем
+    :param filename: имя файла
+    :param preset: конфигурация конструктора (значения тонов и т.п; расположение блоков)
     """
+    with open(filename, "wb") as f:
+        f.write(preset.encode("utf-8"))
 
 
 def list_presets(dirname: str='') -> list:
@@ -150,13 +154,14 @@ def list_presets(dirname: str='') -> list:
     return result
 
 
-def load_preset(filename: str) -> dict:
+def load_preset(filename: str) -> str:
     """
-    Загружает набор параметров синтеза из файла
+    Загружает конфигурацию конструктора из файла с заданным именем
+    :param filename: имя файла
     """
-    preset = {}
-    return preset
-
+    with open(filename, "rb") as f:
+        preset = f.read()
+    return preset.decode("utf-8")
 
 def generate_sine_wave(freq: float, duration: float, amp: float = 1, phase: float = 0) -> list:
     """
@@ -214,6 +219,7 @@ def apply_envelope(samples: list, envelope: list) -> list:
             / (envelope[segm_no][0] - envelope[segm_no - 1][0])
         SaWAppEnv.append(samples[sample_no] * amplitude)
     return SaWAppEnv
+
 
 
 def normalize(samples: list, bits_per_sample=16) -> list:
@@ -287,3 +293,6 @@ def process_request(frontend_data: str):
             samples = synthesize(params)
             write_wave('test.wav', normalize(samples))
     return False
+
+
+#TODO установить numpy и sounddevice в виртуальное окружение и раскомментить соответствующие импорты в начале файла
