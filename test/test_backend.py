@@ -303,7 +303,7 @@ def test_save_n_load_preset():
     assert t == x
 
 
-#test_save_n_load_preset()
+test_save_n_load_preset()
 
 
 def test_playback() -> object:

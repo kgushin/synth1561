@@ -177,12 +177,20 @@ def save_preset(filename: str, preset: str):
         f.write(preset.encode("utf-8"))
 
 
-def list_presets(dirname: str='') -> list:
+def list_presets(dirname) -> tuple:
     """
     Возвращает список сохраненных пресетов
     """
-    result = []
-    return result
+    status = 'ok'
+    files = []
+    messages = []
+    if not dirname.is_dir():
+        status = 'error'
+        messages.append('Каталог пресетов не найден: ' + dirname)
+        return status, files, messages
+    for file in dirname.glob('*.json'):
+        files.append(file.stem)
+    return status, files, messages
 
 
 def load_preset(filename: str) -> str:
@@ -326,5 +334,3 @@ def process_request(frontend_data: str):
             write_wave('test.wav', normalize(samples))
     return False
 
-
-#TODO установить numpy и sounddevice в виртуальное окружение и раскомментить соответствующие импорты в начале файла
