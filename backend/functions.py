@@ -42,8 +42,8 @@ def play_sound(samples: list):
     """
     Проигрывает заданный набор семплов на звуковом устройстве
     """
+    write_wave('delme.wav', samples)
     samples = numpy.array(samples, dtype=numpy.int16)
-    pprint.pprint(samples)
     sounddevice.play(samples, blocking=True)
 
 
@@ -116,6 +116,10 @@ def prepare_params(frontend_data: dict) -> tuple:
                         # TODO one input can have multiple connections
                 if len(node_data['inputs']) == 0:
                     logger.fatal("Не задано входное соединение для звукового устройства " + node_id)
+            case 'envelope':
+                params['effects'][node_id] = node_data['data']
+                params['effects'][node_id]['type'] = node_data['class']
+                params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
             case 'sounddevice':
                 if len(node_data['inputs']['input_1']['connections']) == 0:
                     continue
@@ -246,17 +250,18 @@ def apply_envelope(samples: list, envelope: list) -> list:
     :param envelope: Список кортежей вида (Tn, An), упорядоченный по возрастанию Tn (Tn >= 0). Первый и последний
         кортеж в наборе соответствуют моменту времени (0) и окончанию звучания.
     """
-    wave_time = len(samples) / 44100 #44100 = Sample Rate
+    duration = len(samples) / 44100 #44100 = Sample Rate
+    envelope.append((duration, 0))
     SaWAppEnv = [] #Samples with applied envelope
     segm_no = 1
-
     for sample_no in range(len(samples)):
         current_time = sample_no/44100
-        if envelope[segm_no - 1][0] > current_time > envelope[segm_no][0]:
+        if current_time > envelope[segm_no][0]:
             if segm_no < len(envelope):
                 segm_no += 1
         amplitude = (current_time - envelope[segm_no - 1][0]) * (envelope[segm_no][1] - envelope[segm_no - 1][1])\
             / (envelope[segm_no][0] - envelope[segm_no - 1][0])
+        amplitude = (amplitude + envelope[segm_no - 1][1]) ** 2
         SaWAppEnv.append(samples[sample_no] * amplitude)
     return SaWAppEnv
 
@@ -294,6 +299,8 @@ def synthesize(params: dict) -> list:
                                               data['phase'])
     while len(result) == 0:
         for id, data in params['effects'].items():
+            if not id in tone_samples.keys():
+                tone_samples[id] = []
             match data['type']:
                 case 'mixer':
                     inputs_ready = True
@@ -301,11 +308,14 @@ def synthesize(params: dict) -> list:
                         if input_id not in tone_samples.keys():
                             inputs_ready = False
                     if inputs_ready == True:
-                        tone_samples[id] = []
                         for input_id in data['input']:
                             tone_samples[id] = mix([tone_samples[input_id], tone_samples[id]])
+                case 'envelope':
+                    if (len(tone_samples[id]) == 0) and (len(tone_samples[data['input']]) > 0):
+                        tone_samples[id] = apply_envelope(tone_samples[data['input']],
+                                                          list(eval(data['params'])))
                 case 'sounddevice':
-                    if len(tone_samples[data['input']]) > 0:
+                    if (data['input'] in tone_samples) and (len(tone_samples[data['input']]) > 0):
                         result = tone_samples[data['input']]
     return result
 

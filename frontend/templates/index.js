@@ -128,7 +128,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
       editor.addNode('tone', 0,  1, pos_x, pos_y, 'tone', {"freq": '', "amp": '1', "phase": '0'}, tone);
       break;
     case 'harmonic':
-    var harmonic = `
+      var harmonic = `
     <div>
       <div class="title-box"><i class="fab fa-facebook"></i> Генератор гармоники</div>
       <div class="box">
@@ -243,7 +243,6 @@ function changeMode(option) {
     lock.style.display = 'block';
     unlock.style.display = 'none';
   }
-
 }
 
 
@@ -313,7 +312,9 @@ function backend_push_preset(preset_name) {
     });
 }
 
-function backend_play() {
+function backend_play(el) {
+  var saved_bgcolor = el.style.backgroundColor;
+  el.style.backgroundColor = "red";
   data = editor.export();
   data["command"] = "play";
   const api_url = "{{ url_for("play") }}"
@@ -324,7 +325,8 @@ function backend_play() {
   })
     .then(response => response.json())
     .then(data => {
-      Swal.fire({ title: 'Ответ', html: 'Данные: <textarea>'+escapeHtml(JSON.stringify(data, null, 4))+'</textarea>'});
+      el.style.backgroundColor = saved_bgcolor;
+      //Swal.fire({ title: 'Ответ', html: 'Данные: <textarea>'+escapeHtml(JSON.stringify(data, null, 4))+'</textarea>'});
     }
   )
 }
