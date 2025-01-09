@@ -9,10 +9,12 @@ editor.import(dataToImport);
 // TODO: disable logging in prod
 editor.on('nodeCreated', function(id) {
   console.log("Node created " + id);
+  check_scheme();
 })
 
 editor.on('nodeRemoved', function(id) {
   console.log("Node removed " + id);
+  check_scheme();
 })
 
 editor.on('nodeSelected', function(id) {
@@ -30,11 +32,13 @@ editor.on('moduleChanged', function(name) {
 editor.on('connectionCreated', function(connection) {
   console.log('Connection created');
   console.log(connection);
+  check_scheme();
 })
 
 editor.on('connectionRemoved', function(connection) {
   console.log('Connection removed');
   console.log(connection);
+  check_scheme();
 })
 
 editor.on('mouseMove', function(position) {
@@ -116,7 +120,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'tone':
     var tone = `
     <div>
-      <div class="title-box"><i class="fab fa-facebook"></i> Генератор тона</div>
+      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор тона</div>
           <div class="box">
         <p>Параметры</p>
         f: <input class="short" type="text" df-freq>
@@ -130,7 +134,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'harmonic':
       var harmonic = `
     <div>
-      <div class="title-box"><i class="fab fa-facebook"></i> Генератор гармоники</div>
+      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор гармоники</div>
       <div class="box">
         <p>Параметры</p>
         k: <input class="short" type="text" df-factor>
@@ -327,6 +331,27 @@ function backend_play(el) {
     .then(data => {
       el.style.backgroundColor = saved_bgcolor;
       //Swal.fire({ title: 'Ответ', html: 'Данные: <textarea>'+escapeHtml(JSON.stringify(data, null, 4))+'</textarea>'});
+    }
+  )
+}
+
+function check_scheme() {
+  check_btn_el = document.getElementById("check_btn")
+  data = editor.export();
+  data["command"] = "check";
+  const api_url = "{{ url_for("check_params") }}"
+  fetch(api_url, {
+    "method": "POST",
+    "headers": {"Content-Type": "application/json"},
+    "body": JSON.stringify(data)
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.hasOwnProperty("res") && data["res"] == 'ok') {
+        check_btn_el.style.backgroundColor = "green";
+      } else {
+        check_btn_el.style.backgroundColor = "red";
+      }
     }
   )
 }

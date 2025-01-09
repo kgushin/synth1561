@@ -16,10 +16,10 @@
   <div class="wrapper">
     <div class="col">
       <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="tone">
-        <i class="fab fa-facebook"></i><span> Генератор тона</span>
+        <i class="fas fa-wave-square"></i><span> Генератор тона</span>
       </div>
       <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="harmonic">
-        <i class="fab fa-facebook"></i><span> Генератор гармоники</span>
+        <i class="fas fa-wave-square"></i><span> Генератор гармоники</span>
       </div>
       <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="envelope">
         <i class="fas fa-code"></i><span> Огибающая</span>
@@ -31,7 +31,7 @@
         <i class="fas fa-volume-up"></i><span> Звуковое устройство</span>
       </div>
       <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="dbclick">
-        <i class="fas fa-volume-up"></i><span> Devtest</span>
+        <i class="fab fa-dev"></i><span> Devtest</span>
       </div>
 
     </div>
@@ -47,11 +47,11 @@
         <div class="ctrl-btn btn-dev" onclick="backend_dev()">Dev</div>
         <div class="bar-file">
           <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected()"></i>
-          <i class="fas fa-file-download" title="Загрузить" onclick="backend_load_preset()"></i>
-          <i class="fas fa-file-upload" title="Сохранить" onclick="backend_save_preset()"></i>
+          <i class="fas fa-file-upload" title="Загрузить" onclick="backend_load_preset()"></i>
+          <i class="fas fa-file-download" title="Сохранить" onclick="backend_save_preset()"></i>
         </div>
         <div class="bar-cmd">
-          <i class="fas fa-heartbeat" title="Проверить схему" onclick="backend_dev(this)"></i>
+          <i id = "check_btn" class="fas fa-heartbeat" title="Проверить схему" onclick="backend_dev(this)"></i>
           <i class="fas fa-play" title="Синтезировать звук" onclick="backend_play(this)"></i>
         </div>
         <div class="btn-lock">
