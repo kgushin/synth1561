@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>SYNTH1561</title>
-  <meta name="description"
-        content="Школьный проект">
+  <meta name="description" content="Школьный проект">
 </head>
 <body>
   {% block js_css %}{% endblock %}
   <header>
-    <h2>SYNTH1561</h2>
-    <!-- div class="github-link"><a href="https://github.com/jerosoler/Drawflow" target="_blank"><i class="fab fa-github fa-3x"></i></a></div>
-    <div class="them-edit-link"><a href="https://jerosoler.github.io/drawflow-theme-generator/" target="_blank">🎨</a></div -->
+    <h2 style="float:left;"><a href="{{ url_for('index') }}">SYNTH1561</a></h2>
+    <div style="float:right; margin:20px;">
+      <a href="{{ url_for('docs') }}">Документация</a>
+      <a href="{{ url_for('about') }}">О проекте</a>
+    </div>
   </header>
   {% block main %}{% endblock %}
 </body>

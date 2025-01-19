@@ -6,9 +6,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='drawflow.min.css') }}">
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='beautiful.css') }}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" integrity="sha256-h20CPZ0QyXlBuAw7A+KluUYx/3pK+c7lYEpqLTlxjYQ=" crossorigin="anonymous" />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-  <script src="{{ url_for('static', filename='sweetalert2@9.js') }}"></script><!-- https://sweetalert2.github.io/ -->
-  <script src="{{ url_for('static', filename='micromodal.min.js') }}"></script><!-- https://micromodal.vercel.app/ -->
+  <!--link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" -->
+  <script src="{{ url_for('static', filename='d3.v4.min.js') }}"> </script>
+  <script src="{{ url_for('static', filename='sweetalert2@11.js') }}"></script><!-- https://sweetalert2.github.io/ -->
+  <!-- script src="{{ url_for('static', filename='micromodal.min.js') }}"></script><!-- https://micromodal.vercel.app/ -->
   <!-- TODO Скорее всего sweetalert и micromodal друг друга дублируют, попробовать избавиться -->
 {% endblock %}
 
@@ -27,11 +28,14 @@
       <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="mixer">
         <i class="fas fa-code-branch"></i><span> Микшер</span><span style="float: right; margin-right: 10px; opacity: 50%; cursor: help;" title="Описание элемента" onclick="show_modal_help('mixer')"><i class="far fa-question-circle"></i></span>
       </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="modulator">
+        <i class="fas fa-code-branch"></i><span> Модулятор</span><span style="float: right; margin-right: 10px; opacity: 50%; cursor: help;" title="Описание элемента" onclick="show_modal_help('modulator')"><i class="far fa-question-circle"></i></span>
+      </div>
       <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="sounddevice">
         <i class="fas fa-volume-up"></i><span> Звуковое устройство</span><span style="float: right; margin-right: 10px; opacity: 50%; cursor: help;" title="Описание элемента" onclick="show_modal_help('sounddevice')"><i class="far fa-question-circle"></i></span>
       </div>
-      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="dbclick">
-        <i class="fab fa-dev"></i><span> Devtest</span><span style="float: right; margin-right: 10px; opacity: 50%; cursor: help;" title="Описание элемента" onclick="show_modal_help('devtest')"><i class="far fa-question-circle"></i></span>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="oscilloscope">
+        <i class="fas fa-signal"></i><span> Осциллограф</span><span style="float: right; margin-right: 10px; opacity: 50%; cursor: help;" title="Описание элемента" onclick="show_modal_help('oscilloscope')"><i class="far fa-question-circle"></i></span>
       </div>
 
     </div>
@@ -44,14 +48,14 @@
 
       </div>
       <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
-        <div class="ctrl-btn btn-dev" onclick="backend_dev()">Dev</div>
+        <div class="ctrl-btn btn-dev" id="ctrl-btn">Без имени</div>
         <div class="bar-file">
-          <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected()"></i>
+          <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected(); set_schema_name('');"></i>
           <i class="fas fa-file-upload" title="Загрузить" onclick="backend_load_preset()"></i>
           <i class="fas fa-file-download" title="Сохранить" onclick="backend_save_preset()"></i>
         </div>
         <div class="bar-cmd">
-          <i id = "check_btn" class="fas fa-heartbeat" title="Проверить схему" onclick="backend_dev(this)"></i>
+          <i id = "check_btn" class="fas fa-heartbeat" title="Проверить схему" onclick="backend_check(this)"></i>
           <i class="fas fa-play" title="Синтезировать звук" onclick="backend_play(this)"></i>
         </div>
         <div class="btn-lock">

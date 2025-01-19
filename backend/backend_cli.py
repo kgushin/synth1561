@@ -44,3 +44,11 @@ if options.play == True:
     if res == 'ok':
         samples = fn.synthesize(par)
         fn.play_sound(fn.normalize(samples))
+
+if options.export != "":
+    res, msg, par = fn.prepare_params(preset_data)
+    print(res, msg)
+    if res == 'ok':
+        samples = fn.synthesize(par)
+    with open("samples.txt", "w") as f:
+        f.write("\n".join(str(sample) for sample in samples))

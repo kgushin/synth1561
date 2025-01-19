@@ -1,6 +1,7 @@
 import sys
 import json
 from pathlib import Path
+import pprint
 
 from flask import render_template
 from flask import jsonify
@@ -20,6 +21,16 @@ def index():
     return render_template('index.html')
 
 
+@frontend.route('/docs')
+def docs():
+    return render_template('docs.html')
+
+
+@frontend.route('/about')
+def about():
+    return render_template('about.html')
+
+
 @frontend.route('/check_params', methods=['POST'])
 def check_params():
     res, msg, par = fn.prepare_params(request.json)
@@ -31,8 +42,21 @@ def play():
     res, msg, par = fn.prepare_params(request.json)
     if res == 'ok':
         samples = fn.synthesize(par)
+        samples = fn.apply_envelope(samples, [(0, 1),(par["duration"] * 0.9, 1), (par["duration"], 0)])
         fn.play_sound(fn.normalize(samples))
     return jsonify({'res': res, 'msg': msg, 'par': par})
+
+
+@frontend.route('/get_samples', methods=['POST'])
+def get_samples():
+    res, msg, par = fn.prepare_params(request.json)
+    samples = []
+    data = []
+    if res == 'ok':
+        samples = fn.synthesize(par, par['output_node'])
+        for idx in range(len(samples)):
+            data.append(str(round(samples[idx], 3)))
+    return jsonify({'res': res, 'msg': msg, 'data': ",".join(data), 'sample_rate': fn.SAMPLE_RATE})
 
 
 @frontend.route('/list_presets', methods=['GET'])

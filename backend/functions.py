@@ -44,6 +44,8 @@ def play_sound(samples: list):
     """
     write_wave('delme.wav', samples)
     samples = numpy.array(samples, dtype=numpy.int16)
+    silence = numpy.zeros(1000, dtype=numpy.int16)
+    samples = numpy.concatenate((samples, silence))
     sounddevice.play(samples, blocking=True)
 
 
@@ -83,8 +85,10 @@ def prepare_params(frontend_data: dict) -> tuple:
         return status, messages, params
 
     params = {'tones':{}, 'effects':{}, 'duration':5}
+    if 'output_node' in frontend_data:
+        params['output_node'] = int(frontend_data['output_node'])
     num_endpoints = 0
-    # TODO длительность должна задаваться с фронтенда?
+
     # Собираем списки тонов и эффектов
     for node_id, node_data in frontend_data['drawflow']['Home']['data'].items():
         if str(int(node_id)) != node_id:
@@ -114,24 +118,44 @@ def prepare_params(frontend_data: dict) -> tuple:
                     for connection_data in input_data['connections']:
                         params['effects'][node_id]['input'].append(connection_data['node'])
                         # TODO one input can have multiple connections
-                if len(node_data['inputs']) == 0:
-                    logger.fatal("Не задано входное соединение для звукового устройства " + node_id)
+                if len(params['effects'][node_id]['input']) == 0:
+                    messages["error"].append('Элемент "Микшер" ' + node_id + ' не имеет входных подключений')
+            case 'modulator':
+                params['effects'][node_id] = node_data['data']
+                params['effects'][node_id]['type'] = node_data['class']
+                params['effects'][node_id]['input'] = []
+                for input_data in node_data['inputs'].values():
+                    for connection_data in input_data['connections']:
+                        params['effects'][node_id]['input'].append(connection_data['node'])
+                if len(params['effects'][node_id]['input']) == 0:
+                    messages["error"].append('Элемент "Модулятор" ' + node_id + ' не имеет входных подключений')
             case 'envelope':
                 params['effects'][node_id] = node_data['data']
                 params['effects'][node_id]['type'] = node_data['class']
                 params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
             case 'sounddevice':
-                if len(node_data['inputs']['input_1']['connections']) == 0:
-                    continue
-                params['effects'][node_id] = node_data['data']
-                params['effects'][node_id]['type'] = node_data['class']
-                params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
                 num_endpoints += 1
+                params['effects'][node_id] = node_data['data']
+                if len(node_data['inputs']['input_1']['connections']):
+                    params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
+                else:
+                    messages["error"].append(
+                        'Элемент "Звуковое устройство" ' + node_id + ' не имеет входных подключений')
+                if 'duration' in node_data['data']:
+                    params['duration'] = int(node_data['data']['duration'])
+                params['effects'][node_id]['type'] = node_data['class']
+            case 'oscilloscope':
+                if len(node_data['inputs']['input_1']['connections']):
+                    params['output_node'] = node_data['inputs']['input_1']['connections'][0]['node'];
+                else:
+                    messages["warn"].append('Элемент "Осциллограф" ' + node_id + ' не подключён к схеме. Не подключённый осциллограф показывает сигнал на выходе звукового устройства.')
             case _:
                 messages["error"].append('Неизвестный тип узла: ' + node_data['class'] + ', id: ' + node_id)
 
-    if num_endpoints != 1:
-        messages["error"].append('Отсутствует узел sounddevice или таких узлов больше одного: ' + str(num_endpoints))
+    if num_endpoints == 0:
+        messages["error"].append('Отсутствует обязательный элемент "Звуковое устройство"')
+    if num_endpoints > 1:
+        messages["error"].append('На схеме имеются несколько элементов "Звуковое устройство": ' + str(num_endpoints))
 
     # TODO Проверяем длительность
     '''
@@ -140,7 +164,7 @@ def prepare_params(frontend_data: dict) -> tuple:
         return params;
     else:
         params['duration'] = float(params['duration'])
-        if params['duration'] < 0:
+        if params['duration'] <= 0:
             logger.fatal('Недопустимое значение: длительность ' + params['duration'])
         if params['duration'] > 30:
             logger.warning('Возможно, слишком большое значение: длительность' + params['duration'])
@@ -150,8 +174,8 @@ def prepare_params(frontend_data: dict) -> tuple:
     # Для гармоник явно определяем частоту
     for tone_id, tone_data in params['tones'].items():
         if tone_data['type'] == 'tone':
-            if 'freq' not in tone_data or tone_data['freq'] == '':
-                messages["critical"].append(f'Для узла {tone_id} не задан обязательный параметр "частота"')
+            if 'freq' not in tone_data or float(tone_data['freq']) == 0:
+                messages["critical"].append(f'Для элемента "Генератор тона" {tone_id} не задан обязательный параметр "частота"')
             else:
                 params['tones'][tone_id]['freq'] = float(tone_data['freq'])
         if 'amp' in tone_data:
@@ -230,6 +254,29 @@ def modulate_amp(base: list, mod: list) -> list:
     return result
 
 
+def multiply(samples1: list, samples2: list) -> list:
+    """
+    Выполняет почленное перемножение двух наборов семплов
+    """
+    result = []
+    for idx in range(0, len(samples1)):
+        curr_sample = 0
+        if idx < len(samples2):
+            curr_sample = samples1[idx] * samples2[idx]
+        result.append(curr_sample)
+    return result
+
+def modulate(base_samples, control_samples, depth):
+    """
+    Модулирует сигнал base_samples сигналом control_samples с глубиной depth
+    """
+    factoring_samples = []
+    control_dc = 1 - depth
+    for idx in range(0, len(control_samples)):
+        factoring_samples.append(control_samples[idx] * depth + control_dc)
+    return multiply(base_samples, factoring_samples)
+
+
 def mix(sets: list) -> list:
     """
     Смешивает заданные массивы семплов путем почленного суммирования
@@ -287,8 +334,11 @@ def normalize(samples: list, bits_per_sample=16) -> list:
     return normalized_samples
 
 
-def synthesize(params: dict) -> list:
+def synthesize(params: dict, end_node: int=0) -> list:
     """
+    Синтезирует набор семплов по заданным параметрам синтеза
+    :param params: параметры синтеза
+    :param end_node: для какого узла вернуть результат (если 0, то для звукового устройства)
     """
     tone_samples = {}
     result = []
@@ -297,10 +347,15 @@ def synthesize(params: dict) -> list:
                                               params['duration'],
                                               data['amp'],
                                               data['phase'])
+    if id == end_node:
+        return tone_samples[id]
+
     while len(result) == 0:
         for id, data in params['effects'].items():
             if not id in tone_samples.keys():
                 tone_samples[id] = []
+            elif len(tone_samples[id]) > 0:
+                continue
             match data['type']:
                 case 'mixer':
                     inputs_ready = True
@@ -308,8 +363,20 @@ def synthesize(params: dict) -> list:
                         if input_id not in tone_samples.keys():
                             inputs_ready = False
                     if inputs_ready == True:
+                        input_samples_list = []
                         for input_id in data['input']:
-                            tone_samples[id] = mix([tone_samples[input_id], tone_samples[id]])
+                            input_samples_list.append(tone_samples[input_id])
+                        tone_samples[id] = mix(input_samples_list)
+                case 'modulator':
+                    inputs_ready = True
+                    for input_id in data['input']:
+                        if input_id not in tone_samples.keys():
+                            inputs_ready = False
+                    if inputs_ready == True:
+                        input_samples_list = []
+                        for input_id in data['input']:
+                            input_samples_list.append(tone_samples[input_id])
+                        tone_samples[id] = modulate(input_samples_list[0], input_samples_list[1], float(data['depth']))
                 case 'envelope':
                     if (len(tone_samples[id]) == 0) and (len(tone_samples[data['input']]) > 0):
                         tone_samples[id] = apply_envelope(tone_samples[data['input']],
@@ -317,7 +384,9 @@ def synthesize(params: dict) -> list:
                 case 'sounddevice':
                     if (data['input'] in tone_samples) and (len(tone_samples[data['input']]) > 0):
                         result = tone_samples[data['input']]
-    return result
+                        return result
+        if (end_node in tone_samples) and len(tone_samples[end_node]) > 0:
+            return tone_samples[end_node]
 
 
 def process_request(frontend_data: str):

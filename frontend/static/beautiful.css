@@ -129,6 +129,7 @@ header a {
   right: 10px;
   border: 1px solid #96015b;
   background: #e3195a;
+  opacity:70%;
 }
 
 .btn-play {
@@ -459,4 +460,17 @@ header a {
   text-align:center;
   margin-top:5px;
   margin-left:50px;
+}
+
+/* d3 chart styles */
+.axis path, .axis line {
+    fill: none;
+    stroke: #333;
+}
+.axis .grid-line {
+    stroke: #000;
+    stroke-opacity: 0.2;
+}
+.axis text {
+    font: 10px Verdana;
 }
