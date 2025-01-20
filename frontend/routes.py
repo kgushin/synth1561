@@ -43,7 +43,13 @@ def play():
     if res == 'ok':
         samples = fn.synthesize(par)
         samples = fn.apply_envelope(samples, [(0, 1),(par["duration"] * 0.9, 1), (par["duration"], 0)])
-        fn.play_sound(fn.normalize(samples))
+        samples = fn.normalize(samples)
+        if 'master_volume' in par and par['master_volume'] < 1:
+            adj_samples = []
+            for sample in samples:
+                adj_samples.append(int(sample * par['master_volume']))
+            samples = adj_samples
+        fn.play_sound(samples)
     return jsonify({'res': res, 'msg': msg, 'par': par})
 
 

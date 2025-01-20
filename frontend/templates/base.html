@@ -4,15 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>SYNTH1561</title>
-  <meta name="description" content="Школьный проект">
+  <title>Школьный проект SYNTH1561</title>
+  <meta name="description" content="Школьный проект SYNTH1561">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
   {% block js_css %}{% endblock %}
   <header>
     <h2 style="float:left;"><a href="{{ url_for('index') }}">SYNTH1561</a></h2>
     <div style="float:right; margin:20px;">
-      <a href="{{ url_for('docs') }}">Документация</a>
+      <a href="{{ url_for('docs') }}" style="padding-right:20px;">Документация</a>
       <a href="{{ url_for('about') }}">О проекте</a>
     </div>
   </header>

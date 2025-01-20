@@ -84,7 +84,7 @@ def prepare_params(frontend_data: dict) -> tuple:
         messages["critical"].append('Неверный формат входных данных: drawflow/Home/data не является словарем')
         return status, messages, params
 
-    params = {'tones':{}, 'effects':{}, 'duration':5}
+    params = {'tones':{}, 'effects':{}, 'duration':5, 'master_volume':1}
     if 'output_node' in frontend_data:
         params['output_node'] = int(frontend_data['output_node'])
     num_endpoints = 0
@@ -131,6 +131,8 @@ def prepare_params(frontend_data: dict) -> tuple:
                     messages["error"].append('Элемент "Модулятор" ' + node_id + ' не имеет входных подключений')
             case 'envelope':
                 params['effects'][node_id] = node_data['data']
+                if 'duration' in node_data['data']:
+                    params['duration'] = float(node_data['data']['duration'])
                 params['effects'][node_id]['type'] = node_data['class']
                 params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
             case 'sounddevice':
@@ -142,13 +144,15 @@ def prepare_params(frontend_data: dict) -> tuple:
                     messages["error"].append(
                         'Элемент "Звуковое устройство" ' + node_id + ' не имеет входных подключений')
                 if 'duration' in node_data['data']:
-                    params['duration'] = int(node_data['data']['duration'])
+                    params['duration'] = float(node_data['data']['duration'])
+                if 'volume' in node_data['data'] and node_data['data']['volume'] != '':
+                    params['master_volume'] = float(node_data['data']['volume'])
                 params['effects'][node_id]['type'] = node_data['class']
             case 'oscilloscope':
                 if len(node_data['inputs']['input_1']['connections']):
                     params['output_node'] = node_data['inputs']['input_1']['connections'][0]['node'];
                 else:
-                    messages["warn"].append('Элемент "Осциллограф" ' + node_id + ' не подключён к схеме. Не подключённый осциллограф показывает сигнал на выходе звукового устройства.')
+                    messages["warn"].append('Элемент "Осциллограф" ' + node_id + ' не подключён к схеме. Не подключённый осциллограф показывает сигнал на входе звукового устройства.')
             case _:
                 messages["error"].append('Неизвестный тип узла: ' + node_data['class'] + ', id: ' + node_id)
 
@@ -157,18 +161,12 @@ def prepare_params(frontend_data: dict) -> tuple:
     if num_endpoints > 1:
         messages["error"].append('На схеме имеются несколько элементов "Звуковое устройство": ' + str(num_endpoints))
 
-    # TODO Проверяем длительность
-    '''
-    if 'duration' not in frontend_data:
-        logger.fatal('Не задан обязательный параметр: длительность')
-        return params;
-    else:
-        params['duration'] = float(params['duration'])
-        if params['duration'] <= 0:
-            logger.fatal('Недопустимое значение: длительность ' + params['duration'])
-        if params['duration'] > 30:
-            logger.warning('Возможно, слишком большое значение: длительность' + params['duration'])
-    '''
+    if params['duration'] <= 0:
+        messages["error"].append('Недопустимое значение длительности: ' + str(params['duration']) + ' сек.')
+    if params['duration'] > 30:
+        messages["error"].append('Cлишком большое значение длительности: ' + str(params['duration']) + ' сек. Длительность не должна превышать 30 сек.')
+    if abs(params['master_volume']) > 1:
+        messages["error"].append('Cлишком большое значение громкости ' + str(params['master_volume']) + '. Громкость не должна превышать 1 (100%).')
 
     # Приводим тип всех параметров
     # Для гармоник явно определяем частоту
@@ -187,8 +185,8 @@ def prepare_params(frontend_data: dict) -> tuple:
             base_id = tone_data['base']
             freq = float(params['tones'][base_id]['freq']) * factor
             params['tones'][tone_id]['freq'] = freq
-            if freq > 16000:
-                messages["warn"].append('Тон ' + tone_id +' имеет слишком большое значение частоты')
+        if 'freq' in params['tones'][tone_id] and params['tones'][tone_id]['freq'] > 16000:
+                messages["warn"].append('Тон ' + tone_id +' имеет слишком большое значение частоты: ' + str(params['tones'][tone_id]['freq']) + ' Гц.')
 
     if len(messages['critical']) == 0 and len(messages['error']) == 0:
         status = 'ok'

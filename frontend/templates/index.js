@@ -1,6 +1,6 @@
 var id = document.getElementById("drawflow");
 const editor = new Drawflow(id);
-editor.reroute = true;
+editor.reroute = false;
 const dataToImport = {"drawflow":{"Home":{"data":{"1":{"id":1,"name":"welcome","data":{},"class":"welcome","html":"\n    <div>\n      <div class=\"title-box\">&#128587; <b>Добро пожаловать!</b></div>\n      <div class=\"box\">\n        <p> <b>Краткая справка:</b></p><br>\n\n        <p><b>Добавляйте элементы</b>, перетаскивая их из палитры слева<br><br>\n           <b>Чтобы соединить элементы</b>, перетащите выход одного ко входу другого<br><br>\n           <b>Для удаления</b> выберите элемент и нажмите клавишу Delete<br><br>\n           <b>Для изменения масштаба</b> изображения вращайте колёсико мыши, нажав Ctrl</p>\n      </div>\n    </div>\n    ","typenode": false, "inputs":{},"outputs":{},"pos_x":10,"pos_y":10}}}}}
 editor.start();
 editor.import(dataToImport);
@@ -31,18 +31,16 @@ editor.on('moduleChanged', function(name) {
 
 editor.on('connectionCreated', function(connection) {
   console.log('Connection created');
-  console.log(connection);
   backend_check();
 })
 
 editor.on('connectionRemoved', function(connection) {
   console.log('Connection removed');
-  console.log(connection);
   backend_check();
 })
 
 editor.on('mouseMove', function(position) {
-  console.log('Position mouse x:' + position.x + ' y:'+ position.y);
+  //console.log('Position mouse x:' + position.x + ' y:'+ position.y);
 })
 
 editor.on('nodeMoved', function(id) {
@@ -378,6 +376,7 @@ function backend_push_preset(preset_name) {
   set_schema_name(preset_name);
   if (!preset_name) return;
   editor_data = editor.export();
+  editor_data['zoom'] = editor.zoom;
   const api_url = "{{ url_for("save_preset") }}";
   fetch(api_url, {
     "method": "POST",
@@ -438,16 +437,16 @@ function backend_check(el) {
           title = "Схема корректна";
           html = "Ошибки не найдены, можно синтезировать звук";
           if (data["msg"]["warn"].length) {
-            html += '<ul><li>Предупреждение: ' + data["msg"]["warn"].join('<li>') + '</ul>';
+            html += '<ul><li style="text-align:left;">Предупреждение: ' + data["msg"]["warn"].join('<li>') + '</ul>';
           }
         } else {
           title = "Схема некорректна";
           html = "<div style='text-align: left;'><p>Найдены следующие ошибки:</p>";
           if (data["msg"]["critical"].length) {
-            html += '<ul><li>' + data["msg"]["critical"].join('<li>') + '</ul>';
+            html += "<ul><li style='text-align: left;'>" + data["msg"]["critical"].join('<li>') + '</ul>';
           }
           if (data["msg"]["error"].length) {
-            html += '<ul><li>' + data["msg"]["error"].join('<li>') + '</ul>';
+            html += "<ul><li style='text-align: left;'>" + data["msg"]["error"].join('<li>') + '</ul>';
           }
           //html += 'Данные: <textarea>'+escapeHtml(JSON.stringify(data, null, 4))+'</textarea>';
         }
@@ -498,6 +497,12 @@ function backend_fetch_preset(preset_name) {
     .then(data => {
       //console.log(data);
       editor.import(data['data']);
+      if (data['data'].zoom) {
+        editor.zoom = data['data'].zoom;
+        editor.zoom_refresh();
+      } else {
+        editor.zoom_reset();
+      }
       set_schema_name(preset_name);
     });
 }
@@ -527,7 +532,7 @@ function show_modal_help(item) {
     case 'sounddevice':
       title = "Звуковое устройство";
       html = "<div style='text-align: left;'>" +
-      "<p>Звуковое устройство -- элемент, представляющий звуковое устройство компьютера. На схеме обязательно должно присутствовать единственное звуковое устройство. Позволяет задать общую длительность генерируемого звука в секундах и относительный уровень громкости (1 соответствует 100%)" +
+      "<p>Звуковое устройство -- элемент, представляющий звуковое устройство компьютера. На схеме обязательно должно присутствовать одно звуковое устройство. Позволяет задать общую длительность генерируемого звука в секундах (от 0 до 30 сек.) и относительный уровень громкости (1 соответствует 100%)" +
       "</div>";
       break;
     case 'mixer':
@@ -545,7 +550,7 @@ function show_modal_help(item) {
     case 'oscilloscope':
       title = "Осциллограф";
       html = "<div style='text-align: left;'>" +
-      "<p>Позволяет посмотреть график изменения сигнала в точке подключения осциллографа. На схеме может присутствовать не более одного осциллографа. Если осциллограф присутствует на схеме, но не подключён, он покажет сигнал на выходе звукового устройства.</p>" +
+      "<p>Позволяет посмотреть график изменения сигнала в точке подключения осциллографа. На схеме может присутствовать не более одного осциллографа. Если осциллограф присутствует на схеме, но не подключён, он покажет сигнал на выходе звукового устройства.</p><p>Примечание: отображение графика для звука длительностью более 10 секунд требует много памяти и происходит с задержкой.</p>" +
       "</div>";
       break;
     default:
@@ -576,11 +581,10 @@ function show_chart(container, samples) {
   }
 
   //prepare chart data
-  data = []
+  var data = []
   for (var i=0; i<samples.length; i++) {
     data.push({'t':parseFloat((i/44100).toFixed(5)), 'v':parseFloat(samples[i])});
   }
-  console.log(data);
 
   //return;
   // set the dimensions and margins of the graph
@@ -607,10 +611,10 @@ var svg = d3.select(container)
 
     // Add Y axis
     var y = d3.scaleLinear()
-      .domain([minval = d3.min(data, function(d) { return -Math.abs(d.v); }), -minval])
+      .domain([maxval = -1.1 * d3.max(data, function(d) {return Math.abs(d.v);}), -maxval])
       .range([ height, 0 ]);
     yAxis = svg.append("g")
-      .call(d3.axisLeft(y))
+      .call(d3.axisLeft(y).tickSizeOuter(0))
       .call(g => g.append("text")
           .attr("x", -margin.left)
           .attr("y", 0)
@@ -618,13 +622,14 @@ var svg = d3.select(container)
           .attr("text-anchor", "start")
           .text("Уровень сигнала"));
 
-    d3.selectAll("g.y-axis g.tick")
-        .append("line")
-        .classed("grid-line", true)
-        .attr("x1", 0)
+    yAxis.transition().selectAll("g line")
+        .attr('stroke-dasharray', "10,10")
+        .attr('stroke', 'LightGray')
+        .attr("x1", -3)
         .attr("y1", 0)
         .attr("x2", width)
         .attr("y2", 0);
+
 
     // Add a clipPath: everything out of this area won't be drawn.
     var clip = svg.append("defs").append("svg:clipPath")

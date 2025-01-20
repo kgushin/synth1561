@@ -50,7 +50,7 @@
       <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
         <div class="ctrl-btn btn-dev" id="ctrl-btn">Без имени</div>
         <div class="bar-file">
-          <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected(); set_schema_name('');"></i>
+          <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected(); editor.zoom_reset(); set_schema_name('');  backend_check();"></i>
           <i class="fas fa-file-upload" title="Загрузить" onclick="backend_load_preset()"></i>
           <i class="fas fa-file-download" title="Сохранить" onclick="backend_save_preset()"></i>
         </div>
