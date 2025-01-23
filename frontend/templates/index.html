@@ -37,26 +37,25 @@
       <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="oscilloscope">
         <i class="fas fa-signal"></i><span> Осциллограф</span><span style="float: right; margin-right: 10px; opacity: 50%; cursor: help;" title="Описание элемента" onclick="show_modal_help('oscilloscope')"><i class="far fa-question-circle"></i></span>
       </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="comment">
+        <i class="far fa-comment"></i><span> Комментарий</span><span style="float: right; margin-right: 10px; opacity: 50%; cursor: help;" title="Описание элемента" onclick="show_modal_help('comment')"><i class="far fa-question-circle"></i></span>
+      </div>
 
     </div>
     <div class="col-right">
       <div class="menu">
-        <!-- ul>
-          <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected">Home</li>
-          <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li>
-        </ul -->
-
       </div>
       <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
         <div class="ctrl-btn btn-dev" id="ctrl-btn">Без имени</div>
         <div class="bar-file">
-          <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected(); editor.zoom_reset(); set_schema_name('');  backend_check();"></i>
+          <i class="fas fa-file" title="Очистить" onclick="editor.clearModuleSelected(); editor.zoom_reset(); set_schema_name('Без имени');  backend_check();"></i>
           <i class="fas fa-file-upload" title="Загрузить" onclick="backend_load_preset()"></i>
           <i class="fas fa-file-download" title="Сохранить" onclick="backend_save_preset()"></i>
         </div>
         <div class="bar-cmd">
           <i id = "check_btn" class="fas fa-heartbeat" title="Проверить схему" onclick="backend_check(this)"></i>
           <i class="fas fa-play" title="Синтезировать звук" onclick="backend_play(this)"></i>
+          <audio id="player"></audio>
         </div>
         <div class="btn-lock">
           <i id="lock" class="fas fa-lock-open" title="Редактирование разрешено" onclick="editor.editor_mode='fixed'; changeMode('lock');"></i>

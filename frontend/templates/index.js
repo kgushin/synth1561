@@ -1,9 +1,10 @@
 var id = document.getElementById("drawflow");
 const editor = new Drawflow(id);
 editor.reroute = false;
-const dataToImport = {"drawflow":{"Home":{"data":{"1":{"id":1,"name":"welcome","data":{},"class":"welcome","html":"\n    <div>\n      <div class=\"title-box\">&#128587; <b>Добро пожаловать!</b></div>\n      <div class=\"box\">\n        <p> <b>Краткая справка:</b></p><br>\n\n        <p><b>Добавляйте элементы</b>, перетаскивая их из палитры слева<br><br>\n           <b>Чтобы соединить элементы</b>, перетащите выход одного ко входу другого<br><br>\n           <b>Для удаления</b> выберите элемент и нажмите клавишу Delete<br><br>\n           <b>Для изменения масштаба</b> изображения вращайте колёсико мыши, нажав Ctrl</p>\n      </div>\n    </div>\n    ","typenode": false, "inputs":{},"outputs":{},"pos_x":10,"pos_y":10}}}}}
+const dataToImport = {"drawflow":{"Home":{"data":{"1":{"id":1,"name":"comment","data":{},"class":"comment","html":"\n    <div>\n      <div class=\"title-box\">&#128587; <b>Добро пожаловать!</b></div>\n      <div class=\"box\">\n        <p> <b>Краткая справка:</b></p><br>\n\n        <p><b>Добавляйте элементы</b>, перетаскивая их из палитры слева<br><br>\n           <b>Чтобы соединить элементы</b>, перетащите выход одного ко входу другого<br><br>\n           <b>Для удаления</b> выберите элемент и нажмите клавишу Delete<br><br>\n           <b>Для изменения масштаба</b> изображения вращайте колёсико мыши, нажав Ctrl<br><br>\n           <b>Для получения подробной справки</b> нажимайте знаки вопроса в палитре элементов, загрузите схему 'Учебник' или перейдите в раздел 'Документация'</p>\n      </div>\n    </div>\n    ","typenode": false, "inputs":{},"outputs":{},"pos_x":10,"pos_y":10}}}}}
 editor.start();
 editor.import(dataToImport);
+editor.schema_name = 'unnamed';
 
 // Events!
 // TODO: disable logging in prod
@@ -213,27 +214,32 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         `;
         editor.addNode('oscilloscope', 1, 0, pos_x, pos_y, 'oscilloscope', {}, html);
         break;
-    case 'dbclick':
-        var dbclick = `
-        <div>
-        <div class="title-box"><i class="fas fa-mouse"></i> Db Click</div>
-          <div class="box dbclickbox" ondblclick="showpopup(event)">
-          <form>
-            Dbl Click to set params
-            <div class="modal" style="display:none">
-              <div class="modal-content">
-                <span class="close" onclick="closemodal(event)">&times;</span>
-                Укажите параметры элемента<br/>
-                <label for="freq">Частота, Гц </label><input name="freq" type="text" df-freq><br/>
-                Амплитуда, 0..1 <input name="amp" type="text" df-amp><br/>
-                Фаза, -1..1 <input name="phase" type="text" df-phase><br/>
-              </div>
-            </div>
-          </form>
-          </div>
-        </div>
-        `;
-        editor.addNode('dbclick', 1, 1, pos_x, pos_y, 'dbclick', {"freq": 440, "amp": 1, "phase": 0}, dbclick);
+      case 'comment':
+        Swal.fire({
+          title: 'Введите комментарий',
+          html:
+            '<div>Заголовок:<br /><input id="swal-input1" value="Комментарий" class="swal2-input"></div>' +
+            '<div>Текст:<br /><textarea style="min-height:200px;" id="swal-input2" class="swal2-textarea"></textarea></div>',
+          focusConfirm: false,
+          preConfirm: () => {
+            return [
+              document.getElementById('swal-input1').value,
+              document.getElementById('swal-input2').value
+            ]
+          }
+        }).then((result) => {
+          if (result.value[0] || result.value[1]) {
+            var html = '<div>';
+            if (result.value[0]) {
+              html += '<div class="title-box"><b>' + result.value[0] + '</b></div>';
+            }
+            if (result.value[1]) {
+              html += '<div class="box">' + result.value[1] + '</div>';
+              html += '</div>';
+            }
+            editor.addNode('comment', 0, 0, pos_x, pos_y, 'comment', {}, html);
+          }
+        });
         break;
     default:
       editor.addNode('unknown', 0, 0, pos_x, pos_y, 'unknown', {"name": 'unknown'}, "Unknown node type");
@@ -310,6 +316,7 @@ function backend_display_signal() {
   var node_id = 12
   data = editor.export();
   data['output_node'] = node_id;
+  data['name'] = editor.schema_name;
   const api_url = "{{ url_for("get_samples") }}";
   fetch(api_url, {
     "method": "POST",
@@ -343,7 +350,7 @@ function backend_save_preset() {
     .then(data => {
       Swal.fire({
           title: "Сохранить схему",
-          text: "Введите имя файла для сохранения",
+          html: "Введите имя файла для сохранения<br />(может включать буквы, цифры и пробелы)",
           input: "text",
           inputValue: (editor.schema_name?editor.schema_name:''),
           showCancelButton: true,
@@ -377,6 +384,7 @@ function backend_push_preset(preset_name) {
   if (!preset_name) return;
   editor_data = editor.export();
   editor_data['zoom'] = editor.zoom;
+  editor_data['name'] = preset_name;
   const api_url = "{{ url_for("save_preset") }}";
   fetch(api_url, {
     "method": "POST",
@@ -386,6 +394,14 @@ function backend_push_preset(preset_name) {
     .then(response => response.json())
     .then(data => {
       console.log(data);
+      if (data.hasOwnProperty("res") && data["res"] == 'error') {
+        title = 'Ошибка';
+        html = '<div style="text-align:left;">При сохранении возникла ошибка.</div>'
+        if (data["msg"]["error"].length) {
+          html += "<ul><li style='text-align: left;'>" + data["msg"]["error"].join('<li>') + '</ul>';
+        }
+        Swal.fire({'title': title, 'html': html});
+      }
       //editor.import(data['data']);
     });
 }
@@ -396,6 +412,7 @@ function backend_play(el) {
   el.style.backgroundColor = "red";
   data = editor.export();
   data["command"] = "play";
+  data['name'] = editor.schema_name;
   const api_url = "{{ url_for("play") }}"
   fetch(api_url, {
     "method": "POST",
@@ -405,7 +422,14 @@ function backend_play(el) {
     .then(response => response.json())
     .then(data => {
       el.style.backgroundColor = saved_bgcolor;
-      //Swal.fire({ title: 'Ответ', html: 'Данные: <textarea>'+escapeHtml(JSON.stringify(data, null, 4))+'</textarea>'});
+      if (!data['par']['name']) {
+        msg['error'].add('Неверный формат ответа, отсутствует поле name');
+        console.log(data);
+      } else if (data['res'] == 'ok') {
+        var player = document.getElementById('player');
+        player.src = {{ url_for("static", filename='') }} + 'sound_cache/' + data['par']['name'] + '.wav?nocache=' + (new Date().getTime());
+        player.play()
+      }
     }
   )
 }
@@ -419,6 +443,7 @@ function backend_check(el) {
   }
   data = editor.export();
   data["command"] = "check";
+  data['name'] = editor.schema_name;
   const api_url = "{{ url_for("check_params") }}"
   fetch(api_url, {
     "method": "POST",
@@ -551,6 +576,12 @@ function show_modal_help(item) {
       title = "Осциллограф";
       html = "<div style='text-align: left;'>" +
       "<p>Позволяет посмотреть график изменения сигнала в точке подключения осциллографа. На схеме может присутствовать не более одного осциллографа. Если осциллограф присутствует на схеме, но не подключён, он покажет сигнал на выходе звукового устройства.</p><p>Примечание: отображение графика для звука длительностью более 10 секунд требует много памяти и происходит с задержкой.</p>" +
+      "</div>";
+      break;
+    case 'comment':
+      title = "Комментарий";
+      html = "<div style='text-align: left;'>" +
+      "<p>На схему можно добавлять комментарии, например, чтобы не забыть, почему вы указали то или иное значение параметра. Отредактировать добавленный комментарий уже нельзя, если ошиблись &ndash; удалите его и создайте новый.</p>" +
       "</div>";
       break;
     default:

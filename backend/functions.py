@@ -49,14 +49,6 @@ def play_sound(samples: list):
     sounddevice.play(samples, blocking=True)
 
 
-def validate_params(params: dict):
-    """
-    Выполняет валидацию параметров синтеза
-    """
-    result = False
-    return result
-
-
 def prepare_params(frontend_data: dict) -> tuple:
     """
     Подготавливает параметры синтеза для операции синтеза
@@ -84,7 +76,13 @@ def prepare_params(frontend_data: dict) -> tuple:
         messages["critical"].append('Неверный формат входных данных: drawflow/Home/data не является словарем')
         return status, messages, params
 
-    params = {'tones':{}, 'effects':{}, 'duration':5, 'master_volume':1}
+    params = {'name': '', 'tones':{}, 'effects':{}, 'duration':5, 'master_volume':1}
+    if 'name' in frontend_data:
+        if not all(char.isalnum() or char.isspace() for char in frontend_data['name']):
+            status = 'error'
+            messages["error"].append('Недопустимое имя файла: ' + frontend_data['name'])
+            return status, messages, params
+        params['name'] = frontend_data['name']
     if 'output_node' in frontend_data:
         params['output_node'] = int(frontend_data['output_node'])
     num_endpoints = 0
@@ -153,6 +151,9 @@ def prepare_params(frontend_data: dict) -> tuple:
                     params['output_node'] = node_data['inputs']['input_1']['connections'][0]['node'];
                 else:
                     messages["warn"].append('Элемент "Осциллограф" ' + node_id + ' не подключён к схеме. Не подключённый осциллограф показывает сигнал на входе звукового устройства.')
+            case 'comment':
+                # Ничего не делаем
+                messages["warn"].append('На схеме есть элементы "Комментарий", они вам точно нужны?')
             case _:
                 messages["error"].append('Неизвестный тип узла: ' + node_data['class'] + ', id: ' + node_id)
 
