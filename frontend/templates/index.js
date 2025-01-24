@@ -115,13 +115,11 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
   pos_x = pos_x * ( editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)) - (editor.precanvas.getBoundingClientRect().x * ( editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)));
   pos_y = pos_y * ( editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)) - (editor.precanvas.getBoundingClientRect().y * ( editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)));
 
-  node_uid = generate_uid();
-
   switch (name) {
     case 'tone':
     var tone = `
     <div>
-      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор тона <span id="node_` + node_uid + `"></span></div>
+      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор тона <span>[` + editor.nodeId + `]</span></div>
       <div class="box">
         <p>Параметры</p>
         f: <input class="short" type="text" df-freq>
@@ -135,7 +133,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'harmonic':
       var html = `
     <div>
-      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор гармоники <span id="node_` + node_uid + `"></span></div>
+      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор гармоники <span>[` + editor.nodeId + `]</span></div>
       <div class="box">
         <p>Параметры</p>
         k: <input class="short" type="text" df-factor>
@@ -149,7 +147,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'envelope':
       var html = `
       <div>
-        <div class="title-box"><i class="fas fa-code"></i> Огибающая <span id="node_` + node_uid + `"></span></div>
+        <div class="title-box"><i class="fas fa-code"></i> Огибающая <span>[` + editor.nodeId + `]</span></div>
         <div class="box">
           <p>Параметры</p>
           <input type="text" df-params>
@@ -161,7 +159,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'mixer':
         var mixer = `
         <div>
-          <div class="title-box"><i class="fas fa-code-branch"></i> Микшер <span id="node_` + node_uid + `"></span></div>
+          <div class="title-box"><i class="fas fa-code-branch"></i> Микшер <span>[` + editor.nodeId + `]</span></div>
         </div>
         `;
         node_id = editor.addNode('mixer', 3, 1, pos_x, pos_y, 'mixer', {}, mixer);
@@ -169,7 +167,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'modulator':
         var html = `
         <div>
-          <div class="title-box"><i class="fas fa-code-branch"></i> Модулятор <span id="node_` + node_uid + `"></span></div>
+          <div class="title-box"><i class="fas fa-code-branch"></i> Модулятор <span>[` + editor.nodeId + `]</span></div>
           <div class="box">
             <p>Глубина</p>
             D: <input class="short" type="text" df-depth>
@@ -247,11 +245,6 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
       editor.addNode('unknown', 0, 0, pos_x, pos_y, 'unknown', {"name": 'unknown'}, "Unknown node type");
       break;
   }
-  var el = document.getElementById('node_' + node_uid);
-  if (el) {
-    el.innerHTML = '[' + node_id + ']';
-  }
-
 }
 
 var transform = '';
