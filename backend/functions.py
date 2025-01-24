@@ -4,18 +4,12 @@ import wave
 import json
 import pprint
 import numpy
+import ast
 import sounddevice
-
-import logging
-logger = logging.getLogger('')
-
-#import structures
 
 
 SAMPLE_RATE = 44100
 
-
-# Functions
 
 def num_samples(num_seconds: float) -> int:
     """
@@ -41,10 +35,11 @@ def write_wave(filename, samples):
 def play_sound(samples: list):
     """
     Проигрывает заданный набор семплов на звуковом устройстве
+    (используется только при вызове через backend_cli)
     """
     write_wave('delme.wav', samples)
     samples = numpy.array(samples, dtype=numpy.int16)
-    silence = numpy.zeros(1000, dtype=numpy.int16)
+    silence = numpy.zeros(100, dtype=numpy.int16)
     samples = numpy.concatenate((samples, silence))
     sounddevice.play(samples, blocking=True)
 
@@ -79,12 +74,12 @@ def prepare_params(frontend_data: dict) -> tuple:
     params = {'name': '', 'tones':{}, 'effects':{}, 'duration':5, 'master_volume':1}
     if 'name' in frontend_data:
         if not all(char.isalnum() or char.isspace() for char in frontend_data['name']):
-            status = 'error'
             messages["error"].append('Недопустимое имя файла: ' + frontend_data['name'])
             return status, messages, params
         params['name'] = frontend_data['name']
     if 'output_node' in frontend_data:
         params['output_node'] = int(frontend_data['output_node'])
+
     num_endpoints = 0
 
     # Собираем списки тонов и эффектов
@@ -98,8 +93,12 @@ def prepare_params(frontend_data: dict) -> tuple:
         if 'class' not in node_data:
             messages["error"].append('Узел ' + node_id + ' не имеет атрибута class')
             continue
+        if 'data' not in node_data:
+            messages["error"].append('Узел ' + node_id + ' не имеет элемента data')
+            continue
 
         # TODO По-хорошему, надо обходить дерево от узла sounddevice
+        # Пока что собираем отдельно список генераторов и список эффектов
         match node_data['class']:
             case 'tone':
                 params['tones'][node_id] = node_data['data']
@@ -128,11 +127,24 @@ def prepare_params(frontend_data: dict) -> tuple:
                 if len(params['effects'][node_id]['input']) == 0:
                     messages["error"].append('Элемент "Модулятор" ' + node_id + ' не имеет входных подключений')
             case 'envelope':
-                params['effects'][node_id] = node_data['data']
-                if 'duration' in node_data['data']:
-                    params['duration'] = float(node_data['data']['duration'])
-                params['effects'][node_id]['type'] = node_data['class']
-                params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
+                try:
+                    if 'params' not in node_data['data'] or node_data['data']['params'] == '':
+                        raise Exception('Элемент params отсутствует или пустой')
+                    if len(node_data['data']['params']) > 255:
+                        raise Exception('Слишком длинная строка параметров')
+                    if not all(char in '(),. +-0123456789' for char in node_data['data']['params']):
+                        raise Exception('Недопустимый формат ' + str(node_data['data']['params']))
+                    parsed_params = ast.literal_eval(node_data['data']['params'])
+                    if not isinstance(parsed_params, tuple):
+                        raise Exception('Нельзя преобразовать в кортеж ' + str(node_data['data']['params']))
+                    for el in parsed_params:
+                        if not isinstance(el, tuple):
+                            raise Exception('Недопустимый формат элемента ' + str(el))
+                    params['effects'][node_id] = node_data['data']
+                    params['effects'][node_id]['type'] = node_data['class']
+                    params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
+                except Exception as err:
+                    messages['error'].append('Неверные параметры элемента "Огибающая" ' + node_id + ': ' + str(err))
             case 'sounddevice':
                 num_endpoints += 1
                 params['effects'][node_id] = node_data['data']
@@ -173,8 +185,9 @@ def prepare_params(frontend_data: dict) -> tuple:
     # Для гармоник явно определяем частоту
     for tone_id, tone_data in params['tones'].items():
         if tone_data['type'] == 'tone':
-            if 'freq' not in tone_data or float(tone_data['freq']) == 0:
-                messages["critical"].append(f'Для элемента "Генератор тона" {tone_id} не задан обязательный параметр "частота"')
+            if 'freq' not in tone_data or tone_data['freq'] == '' or not all(char in '.0123456789' for char in tone_data['freq']) or float(tone_data['freq'] + '0') == 0:
+                messages["critical"].append(f'Для элемента "Генератор тона" {tone_id} задано недопустимое значение параметра "Частота"')
+                params['tones'][tone_id]['freq'] = 0
             else:
                 params['tones'][tone_id]['freq'] = float(tone_data['freq'])
         if 'amp' in tone_data:
@@ -379,36 +392,9 @@ def synthesize(params: dict, end_node: int=0) -> list:
                 case 'envelope':
                     if (len(tone_samples[id]) == 0) and (len(tone_samples[data['input']]) > 0):
                         tone_samples[id] = apply_envelope(tone_samples[data['input']],
-                                                          list(eval(data['params'])))
+                                                          list(ast.literal_eval(data['params'])))
                 case 'sounddevice':
                     if (data['input'] in tone_samples) and (len(tone_samples[data['input']]) > 0):
-                        result = tone_samples[data['input']]
-                        return result
+                        return tone_samples[data['input']]
         if (end_node in tone_samples) and len(tone_samples[end_node]) > 0:
             return tone_samples[end_node]
-
-
-def process_request(frontend_data: str):
-    """
-    Обработка запроса фронтенда
-    """
-    request_data = json.loads(frontend_data)
-    params = prepare_params(request_data)
-    if 'command' not in request_data:
-        logger.fatal("Отсутствует необходимый параметр command")
-        # TODO подумать, какие ошибки собираем в логгере и когда ловим исключения
-    match request_data['command']:
-        case 'save_preset':
-            save_preset('preset.pre', frontend_data)
-        case 'load_preset':
-            load_preset('')
-        case 'list_presets':
-            list_presets()
-        case 'check_params':
-            prepare_params(request_data)
-        case 'save_wav':
-            status, params, messages = prepare_params(request_data)
-            samples = synthesize(params)
-            write_wave('test.wav', normalize(samples))
-    return False
-

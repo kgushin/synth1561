@@ -1,7 +1,7 @@
 var id = document.getElementById("drawflow");
 const editor = new Drawflow(id);
 editor.reroute = false;
-const dataToImport = {"drawflow":{"Home":{"data":{"1":{"id":1,"name":"comment","data":{},"class":"comment","html":"\n    <div>\n      <div class=\"title-box\">&#128587; <b>Добро пожаловать!</b></div>\n      <div class=\"box\">\n        <p> <b>Краткая справка:</b></p><br>\n\n        <p><b>Добавляйте элементы</b>, перетаскивая их из палитры слева<br><br>\n           <b>Чтобы соединить элементы</b>, перетащите выход одного ко входу другого<br><br>\n           <b>Для удаления</b> выберите элемент и нажмите клавишу Delete<br><br>\n           <b>Для изменения масштаба</b> изображения вращайте колёсико мыши, нажав Ctrl<br><br>\n           <b>Для получения подробной справки</b> нажимайте знаки вопроса в палитре элементов, загрузите схему 'Учебник' или перейдите в раздел 'Документация'</p>\n      </div>\n    </div>\n    ","typenode": false, "inputs":{},"outputs":{},"pos_x":10,"pos_y":10}}}}}
+const dataToImport = {"drawflow":{"Home":{"data":{"0":{"id":0,"name":"comment","data":{},"class":"comment","html":"\n    <div>\n      <div class=\"title-box\">&#128587; <b>Добро пожаловать!</b></div>\n      <div class=\"box\">\n        <p> <b>Краткая справка:</b></p><br>\n\n        <p><b>Добавляйте элементы</b>, перетаскивая их из палитры элементов слева<br><br>\n           <b>Чтобы соединить элементы</b>, перетащите выход одного ко входу другого<br><br>\n           <b>Для удаления</b> выберите элемент и нажмите клавишу Delete<br><br>\n           <b>Для изменения масштаба</b> изображения вращайте колёсико мыши, нажав Ctrl<br><br>\n           <b>Для получения подробной справки</b> нажимайте знаки вопроса в палитре элементов, загрузите схему 'Учебник' или перейдите в раздел 'Документация &ndash; Быстрый старт'</p>\n      </div>\n    </div>\n    ","typenode": false, "inputs":{},"outputs":{},"pos_x":10,"pos_y":10}}}}}
 editor.start();
 editor.import(dataToImport);
 editor.schema_name = 'unnamed';
@@ -115,11 +115,13 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
   pos_x = pos_x * ( editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)) - (editor.precanvas.getBoundingClientRect().x * ( editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)));
   pos_y = pos_y * ( editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)) - (editor.precanvas.getBoundingClientRect().y * ( editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)));
 
+  node_uid = generate_uid();
+
   switch (name) {
     case 'tone':
     var tone = `
     <div>
-      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор тона</div>
+      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор тона <span id="node_` + node_uid + `"></span></div>
       <div class="box">
         <p>Параметры</p>
         f: <input class="short" type="text" df-freq>
@@ -128,12 +130,12 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
       </div>
     </div>
     `;
-      editor.addNode('tone', 0,  1, pos_x, pos_y, 'tone', {"freq": '220', "amp": '1', "phase": '0'}, tone);
+      node_id = editor.addNode('tone', 0,  1, pos_x, pos_y, 'tone', {"freq": '220', "amp": '1', "phase": '0'}, tone);
       break;
     case 'harmonic':
       var html = `
     <div>
-      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор гармоники</div>
+      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор гармоники <span id="node_` + node_uid + `"></span></div>
       <div class="box">
         <p>Параметры</p>
         k: <input class="short" type="text" df-factor>
@@ -142,39 +144,39 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
       </div>
     </div>
     `;
-      editor.addNode('harmonic', 1,  1, pos_x, pos_y, 'harmonic', { "factor": '2', "amp": '1', "phase": '0'}, html);
+      node_id = editor.addNode('harmonic', 1,  1, pos_x, pos_y, 'harmonic', { "factor": '2', "amp": '1', "phase": '0'}, html);
       break
     case 'envelope':
       var html = `
       <div>
-        <div class="title-box"><i class="fas fa-code"></i> Огибающая</div>
+        <div class="title-box"><i class="fas fa-code"></i> Огибающая <span id="node_` + node_uid + `"></span></div>
         <div class="box">
           <p>Параметры</p>
           <input type="text" df-params>
         </div>
       </div>
       `;
-      editor.addNode('envelope', 1, 1, pos_x, pos_y, 'envelope', { "params": ''}, html );
+      node_id = editor.addNode('envelope', 1, 1, pos_x, pos_y, 'envelope', { "params": ''}, html );
       break;
     case 'mixer':
         var mixer = `
         <div>
-          <div class="title-box"><i class="fas fa-code-branch"></i> Микшер</div>
+          <div class="title-box"><i class="fas fa-code-branch"></i> Микшер <span id="node_` + node_uid + `"></span></div>
         </div>
         `;
-        editor.addNode('mixer', 3, 1, pos_x, pos_y, 'mixer', {}, mixer);
+        node_id = editor.addNode('mixer', 3, 1, pos_x, pos_y, 'mixer', {}, mixer);
         break;
     case 'modulator':
         var html = `
         <div>
-          <div class="title-box"><i class="fas fa-code-branch"></i> Модулятор</div>
+          <div class="title-box"><i class="fas fa-code-branch"></i> Модулятор <span id="node_` + node_uid + `"></span></div>
           <div class="box">
             <p>Глубина</p>
             D: <input class="short" type="text" df-depth>
           </div>
         </div>
         `;
-        editor.addNode('modulator', 2, 1, pos_x, pos_y, 'modulator', {'depth': '1'}, html);
+        node_id = editor.addNode('modulator', 2, 1, pos_x, pos_y, 'modulator', {'depth': '1'}, html);
         break;
     case 'sounddevice':
         if (editor.getNodesFromName('sounddevice').length > 0) {
@@ -245,6 +247,11 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
       editor.addNode('unknown', 0, 0, pos_x, pos_y, 'unknown', {"name": 'unknown'}, "Unknown node type");
       break;
   }
+  var el = document.getElementById('node_' + node_uid);
+  if (el) {
+    el.innerHTML = '[' + node_id + ']';
+  }
+
 }
 
 var transform = '';
@@ -598,6 +605,10 @@ function show_modal_help(item) {
   });
 }
 
+
+function generate_uid() {
+  return (new Date().getTime()) + Math.floor(Math.random() * 1000000);
+}
 
 editor.on('import', function(data) {
   console.log("Performed import");
