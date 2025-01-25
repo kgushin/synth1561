@@ -1,16 +1,12 @@
 {% extends "base.html" %}
 
 {% block js_css %}
-  <script src="{{ url_for('static', filename='drawflow.min.js') }}"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/js/all.min.js" integrity="sha256-KzZiKy0DWYsnwMF+X1DvQngQ2/FxF7MF3Ff72XcpuPs=" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='drawflow.min.js') }}"></script><!-- https://github.com/jerosoler/Drawflow -->
   <link rel="stylesheet" href="{{ url_for('static', filename='drawflow.min.css') }}">
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='beautiful.css') }}" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" integrity="sha256-h20CPZ0QyXlBuAw7A+KluUYx/3pK+c7lYEpqLTlxjYQ=" crossorigin="anonymous" />
-  <!--link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" -->
   <script src="{{ url_for('static', filename='d3.v4.min.js') }}"> </script>
   <script src="{{ url_for('static', filename='sweetalert2@11.js') }}"></script><!-- https://sweetalert2.github.io/ -->
-  <!-- script src="{{ url_for('static', filename='micromodal.min.js') }}"></script --><!-- https://micromodal.vercel.app/ -->
-  <!-- TODO Скорее всего sweetalert и micromodal друг друга дублируют, попробовать избавиться -->
+
 {% endblock %}
 
 {% block main %}

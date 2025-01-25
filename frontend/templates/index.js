@@ -599,10 +599,6 @@ function show_modal_help(item) {
 }
 
 
-function generate_uid() {
-  return (new Date().getTime()) + Math.floor(Math.random() * 1000000);
-}
-
 editor.on('import', function(data) {
   console.log("Performed import");
   backend_check();
