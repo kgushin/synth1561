@@ -119,7 +119,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'tone':
     var tone = `
     <div>
-      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор тона <span>[` + editor.nodeId + `]</span></div>
+      <div class="title-box" title="id=` + editor.nodeId + `"><i class="fas fa-wave-square"></i> Генератор тона</div>
       <div class="box">
         <p>Параметры</p>
         f: <input class="short" type="text" df-freq>
@@ -133,7 +133,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'harmonic':
       var html = `
     <div>
-      <div class="title-box"><i class="fas fa-wave-square"></i> Генератор гармоники <span>[` + editor.nodeId + `]</span></div>
+      <div class="title-box" title="id=` + editor.nodeId + `"><i class="fas fa-wave-square"></i> Генератор гармоники</div>
       <div class="box">
         <p>Параметры</p>
         k: <input class="short" type="text" df-factor>
@@ -147,7 +147,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'envelope':
       var html = `
       <div>
-        <div class="title-box"><i class="fas fa-code"></i> Огибающая <span>[` + editor.nodeId + `]</span></div>
+        <div class="title-box" title="id=` + editor.nodeId + `"><i class="fas fa-code"></i> Огибающая</div>
         <div class="box">
           <p>Параметры</p>
           <input type="text" df-params>
@@ -159,7 +159,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'mixer':
         var mixer = `
         <div>
-          <div class="title-box"><i class="fas fa-code-branch"></i> Микшер <span>[` + editor.nodeId + `]</span></div>
+          <div class="title-box" title="id=` + editor.nodeId + `"><i class="fas fa-code-branch"></i> Микшер</div>
         </div>
         `;
         node_id = editor.addNode('mixer', 3, 1, pos_x, pos_y, 'mixer', {}, mixer);
@@ -167,7 +167,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
     case 'modulator':
         var html = `
         <div>
-          <div class="title-box"><i class="fas fa-code-branch"></i> Модулятор <span>[` + editor.nodeId + `]</span></div>
+          <div class="title-box" title="id=` + editor.nodeId + `"><i class="fas fa-code-branch"></i> Модулятор</div>
           <div class="box">
             <p>Глубина</p>
             D: <input class="short" type="text" df-depth>
@@ -186,7 +186,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         }
         var html = `
         <div>
-          <div class="title-box"><i class="fas fa-volume-up"></i> Звуковое устройство</div>
+          <div class="title-box" title="id=` + editor.nodeId + `"><i class="fas fa-volume-up"></i> Звуковое устройство</div>
           <div class="box">
             <p>Параметры</p>
             Громк: <input class="short" type="text" df-volume>
@@ -206,7 +206,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         }
         var html = `
         <div>
-          <div class="title-box"><i class="fas fa-volume-up"></i> Осциллограф</div>
+          <div class="title-box" title="id=` + editor.nodeId + `"><i class="fas fa-signal"></i> Осциллограф</div>
           <div class="box">
             <button onclick="backend_display_signal()">Показать сигнал</button>
           </div>
@@ -231,10 +231,10 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
           if (result.value[0] || result.value[1]) {
             var html = '<div>';
             if (result.value[0]) {
-              html += '<div class="title-box"><b>' + result.value[0] + '</b></div>';
+              html += '<div class="title-box" title="id=' + editor.nodeId + '"><b>' + result.value[0] + '</b></div>';
             }
             if (result.value[1]) {
-              html += '<div class="box">' + result.value[1] + '</div>';
+              html += '<div class="box"  title="id=' + editor.nodeId + '">' + result.value[1] + '</div>';
               html += '</div>';
             }
             editor.addNode('comment', 0, 0, pos_x, pos_y, 'comment', {}, html);
@@ -473,6 +473,7 @@ function backend_check(el) {
           if (data["msg"]["error"].length) {
             html += "<ul><li style='text-align: left;'>" + data["msg"]["error"].join('<li>') + '</ul>';
           }
+          html += "<p>Чтобы узнать id элемента, наведите указатель мыши на его заголовок.</p>";
           //html += 'Данные: <textarea>'+escapeHtml(JSON.stringify(data, null, 4))+'</textarea>';
         }
         Swal.fire({title: title, html: html});

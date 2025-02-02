@@ -12,8 +12,7 @@ synth_params = {
     "duration": 10,
     "harmonics": [
         {"base": 0, "factor": 2, "amp": 0.3, "phase": 0.2},
-        {"base": 0, "factor": 3, "amp": 0.1, "phase": 0},
-        {"base": 0, "factor": 2, "amp": 0.5, "phase": 0.1}
+        {"base": 0, "factor": 3, "amp": 0.1, "phase": 0}
     ],
     "tones": [
         {"freq": 440, "amp": 1, "phase": 0},

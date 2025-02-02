@@ -88,13 +88,13 @@ def prepare_params(frontend_data: dict) -> tuple:
             messages["error"].append('Неизвестный ключ словаря drawflow/Home/data: ' + node_id)
             continue
         if not isinstance(node_data, dict):
-            messages["error"].append('Данные для узла ' + node_id + ' не являются словарём')
+            messages["error"].append('Данные для узла id=' + node_id + ' не являются словарём')
             continue
         if 'class' not in node_data:
-            messages["error"].append('Узел ' + node_id + ' не имеет атрибута class')
+            messages["error"].append('Узел id=' + node_id + ' не имеет атрибута class')
             continue
         if 'data' not in node_data:
-            messages["error"].append('Узел ' + node_id + ' не имеет элемента data')
+            messages["error"].append('Узел id=' + node_id + ' не имеет элемента data')
             continue
 
         # TODO По-хорошему, надо обходить дерево от узла sounddevice
@@ -106,7 +106,10 @@ def prepare_params(frontend_data: dict) -> tuple:
             case 'harmonic':
                 params['tones'][node_id] = node_data['data']
                 params['tones'][node_id]['type'] = node_data['class']
-                params['tones'][node_id]['base'] = node_data['inputs']['input_1']['connections'][0]['node']
+                if len(node_data['inputs']['input_1']['connections']) > 0:
+                    params['tones'][node_id]['base'] = node_data['inputs']['input_1']['connections'][0]['node']
+                else:
+                    messages["error"].append('Элемент "Генератор гармоники" id=' + node_id + ' не имеет входного подключения')
             case 'mixer':
                 params['effects'][node_id] = node_data['data']
                 params['effects'][node_id]['type'] = node_data['class']
@@ -116,7 +119,7 @@ def prepare_params(frontend_data: dict) -> tuple:
                         params['effects'][node_id]['input'].append(connection_data['node'])
                         # TODO one input can have multiple connections
                 if len(params['effects'][node_id]['input']) == 0:
-                    messages["error"].append('Элемент "Микшер" ' + node_id + ' не имеет входных подключений')
+                    messages["error"].append('Элемент "Микшер" id=' + node_id + ' не имеет входных подключений')
             case 'modulator':
                 params['effects'][node_id] = node_data['data']
                 params['effects'][node_id]['type'] = node_data['class']
@@ -125,26 +128,32 @@ def prepare_params(frontend_data: dict) -> tuple:
                     for connection_data in input_data['connections']:
                         params['effects'][node_id]['input'].append(connection_data['node'])
                 if len(params['effects'][node_id]['input']) == 0:
-                    messages["error"].append('Элемент "Модулятор" ' + node_id + ' не имеет входных подключений')
+                    messages["error"].append('Элемент "Модулятор" id=' + node_id + ' не имеет входных подключений')
             case 'envelope':
                 try:
                     if 'params' not in node_data['data'] or node_data['data']['params'] == '':
-                        raise Exception('Элемент params отсутствует или пустой')
+                        raise Exception('Строка параметров не задана')
                     if len(node_data['data']['params']) > 255:
                         raise Exception('Слишком длинная строка параметров')
-                    if not all(char in '(),. +-0123456789' for char in node_data['data']['params']):
-                        raise Exception('Недопустимый формат ' + str(node_data['data']['params']))
+                    if not all(char in '(),. -0123456789' for char in node_data['data']['params']):
+                        raise Exception('Недопустимый формат строки параметров ' + str(node_data['data']['params']))
                     parsed_params = ast.literal_eval(node_data['data']['params'])
                     if not isinstance(parsed_params, tuple):
-                        raise Exception('Нельзя преобразовать в кортеж ' + str(node_data['data']['params']))
+                        raise Exception('Нельзя преобразовать в кортеж строку параметров ' + str(node_data['data']['params']))
+                    if len(parsed_params) == 2 and type(parsed_params[0]) is not tuple:
+                        parsed_params = [parsed_params]
+                    else:
+                        parsed_params = list(parsed_params)
                     for el in parsed_params:
                         if not isinstance(el, tuple):
-                            raise Exception('Недопустимый формат элемента ' + str(el))
-                    params['effects'][node_id] = node_data['data']
+                            raise Exception('Часть строки параметров не является кортежем ' + str(el))
+                    params['effects'][node_id] = {'params': parsed_params}
                     params['effects'][node_id]['type'] = node_data['class']
+                    if len(node_data['inputs']['input_1']['connections']) == 0:
+                        raise Exception('Элемент не имеет входных подключений')
                     params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
                 except Exception as err:
-                    messages['error'].append('Неверные параметры элемента "Огибающая" ' + node_id + ': ' + str(err))
+                    messages['error'].append('Неверные параметры элемента "Огибающая" id=' + node_id + ': ' + str(err))
             case 'sounddevice':
                 num_endpoints += 1
                 params['effects'][node_id] = node_data['data']
@@ -152,7 +161,7 @@ def prepare_params(frontend_data: dict) -> tuple:
                     params['effects'][node_id]['input'] = node_data['inputs']['input_1']['connections'][0]['node']
                 else:
                     messages["error"].append(
-                        'Элемент "Звуковое устройство" ' + node_id + ' не имеет входных подключений')
+                        'Элемент "Звуковое устройство" id=' + node_id + ' не имеет входного подключения')
                 if 'duration' in node_data['data']:
                     params['duration'] = float(node_data['data']['duration'])
                 if 'volume' in node_data['data'] and node_data['data']['volume'] != '':
@@ -162,12 +171,12 @@ def prepare_params(frontend_data: dict) -> tuple:
                 if len(node_data['inputs']['input_1']['connections']):
                     params['output_node'] = node_data['inputs']['input_1']['connections'][0]['node'];
                 else:
-                    messages["warn"].append('Элемент "Осциллограф" ' + node_id + ' не подключён к схеме. Не подключённый осциллограф показывает сигнал на входе звукового устройства.')
+                    messages["warn"].append('Элемент "Осциллограф" id=' + node_id + ' не подключён к схеме. Не подключённый осциллограф показывает сигнал на входе звукового устройства.')
             case 'comment':
                 # Ничего не делаем
                 messages["warn"].append('На схеме есть элементы "Комментарий", они вам точно нужны?')
             case _:
-                messages["error"].append('Неизвестный тип узла: ' + node_data['class'] + ', id: ' + node_id)
+                messages["error"].append('Неизвестный тип узла: id=' + node_data['class'] + ', id: ' + node_id)
 
     if num_endpoints == 0:
         messages["error"].append('Отсутствует обязательный элемент "Звуковое устройство"')
@@ -180,6 +189,10 @@ def prepare_params(frontend_data: dict) -> tuple:
         messages["error"].append('Cлишком большое значение длительности: ' + str(params['duration']) + ' сек. Длительность не должна превышать 30 сек.')
     if abs(params['master_volume']) > 1:
         messages["error"].append('Cлишком большое значение громкости ' + str(params['master_volume']) + '. Громкость не должна превышать 1 (100%).')
+
+    if len(messages['critical']) > 0 or len(messages['error']) > 0:
+        status = 'error'
+        return status, messages, params
 
     # Приводим тип всех параметров
     # Для гармоник явно определяем частоту
@@ -306,13 +319,18 @@ def mix(sets: list) -> list:
 def apply_envelope(samples: list, envelope: list) -> list:
     """
     Применяет заданную огибающую к набору семплов
-    :param envelope: Список кортежей вида (Tn, An), упорядоченный по возрастанию Tn (Tn >= 0). Первый и последний
-        кортеж в наборе соответствуют моменту времени (0) и окончанию звучания.
+    :param samples: массив семплов
+    :param envelope: Кусочно-линейная огибающая
+        Список кортежей вида (Tn, An), упорядоченный по возрастанию Tn (Tn >= 0), где
+        T: float момент времени
+        A: float (0..1) относительная амплитуда в этот момент времени
+        Пример: ((0, 1), (0.1, 0))
     """
     duration = len(samples) / 44100 #44100 = Sample Rate
-    envelope.append((duration, 0))
+    envelope.append((duration, 0)) # От последней заданной точки к концу звучания амплитуда снижается до 0
     SaWAppEnv = [] #Samples with applied envelope
     segm_no = 1
+    print(envelope)
     for sample_no in range(len(samples)):
         current_time = sample_no/44100
         if current_time > envelope[segm_no][0]:
@@ -391,8 +409,7 @@ def synthesize(params: dict, end_node: int=0) -> list:
                         tone_samples[id] = modulate(input_samples_list[0], input_samples_list[1], float(data['depth']))
                 case 'envelope':
                     if (len(tone_samples[id]) == 0) and (len(tone_samples[data['input']]) > 0):
-                        tone_samples[id] = apply_envelope(tone_samples[data['input']],
-                                                          list(ast.literal_eval(data['params'])))
+                        tone_samples[id] = apply_envelope(tone_samples[data['input']], data['params'])
                 case 'sounddevice':
                     if (data['input'] in tone_samples) and (len(tone_samples[data['input']]) > 0):
                         return tone_samples[data['input']]
