@@ -194,7 +194,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
           </div>
         </div>
         `;
-        editor.addNode('sounddevice', 1, 0, pos_x, pos_y, 'sounddevice', {'volume': 1, 'duration': 5}, html);
+        editor.addNode('sounddevice', 1, 0, pos_x, pos_y, 'sounddevice', {'volume': 1, 'duration': "5"}, html);
         break;
     case 'oscilloscope':
         if (editor.getNodesFromName('oscilloscope').length > 0) {

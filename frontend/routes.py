@@ -92,7 +92,7 @@ def save_preset():
         res = 'error'
         msg["error"].append('Неверная структура запроса')
         return jsonify({'res': res, 'msg': msg, 'data': data})
-    if not all(char.isalnum() or char.isspace() for char in request.json['name']):
+    if not fn.is_valid_preset_name(request.json['name']):
         res = 'error'
         msg["error"].append('Недопустимое имя файла: ' + request.json['name'])
         return jsonify({'res': res, 'msg': msg, 'data': data})

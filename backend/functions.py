@@ -37,7 +37,6 @@ def play_sound(samples: list):
     Проигрывает заданный набор семплов на звуковом устройстве
     (используется только при вызове через backend_cli)
     """
-    write_wave('delme.wav', samples)
     samples = numpy.array(samples, dtype=numpy.int16)
     silence = numpy.zeros(100, dtype=numpy.int16)
     samples = numpy.concatenate((samples, silence))
@@ -82,7 +81,28 @@ def prepare_params(frontend_data: dict) -> tuple:
 
     num_endpoints = 0
 
-    # Собираем списки тонов и эффектов
+    # Собираем дерево параметров синтеза
+    """
+    Параметры синтеза: Словарь, содержащий данные для синтеза
+    :key duration:
+    :key tones:
+    :key effects:
+    Пример:
+    synth_params = {
+        "duration": 10,
+        "harmonics": [
+            {"base": 0, "factor": 2, "amp": 0.3, "phase": 0.2},
+            {"base": 0, "factor": 3, "amp": 0.1, "phase": 0}
+        ],
+        "tones": [
+            {"freq": 440, "amp": 1, "phase": 0},
+            {"freq": 2, "amp": 0.1, "phase": 0}
+        ],
+        "effects": [
+            {"type": "envelope", "input": "mixer_0", "data": [(1,1)]}
+        ]
+    }
+    """
     for node_id, node_data in frontend_data['drawflow']['Home']['data'].items():
         if str(int(node_id)) != node_id:
             messages["error"].append('Неизвестный ключ словаря drawflow/Home/data: ' + node_id)
@@ -163,7 +183,11 @@ def prepare_params(frontend_data: dict) -> tuple:
                     messages["error"].append(
                         'Элемент "Звуковое устройство" id=' + node_id + ' не имеет входного подключения')
                 if 'duration' in node_data['data']:
-                    params['duration'] = float(node_data['data']['duration'])
+                    if all(char in ' .+0123456789' for char in node_data['data']['duration']):
+                        params['duration'] = float(node_data['data']['duration'])
+                    else:
+                        messages["error"].append(
+                            'У элемента "Звуковое устройство" id=' + node_id + ' задано недопустимое значение длительности: ' + str(node_data['data']['duration']))
                 if 'volume' in node_data['data'] and node_data['data']['volume'] != '':
                     params['master_volume'] = float(node_data['data']['volume'])
                 params['effects'][node_id]['type'] = node_data['class']
@@ -198,7 +222,7 @@ def prepare_params(frontend_data: dict) -> tuple:
     # Для гармоник явно определяем частоту
     for tone_id, tone_data in params['tones'].items():
         if tone_data['type'] == 'tone':
-            if 'freq' not in tone_data or tone_data['freq'] == '' or not all(char in '.0123456789' for char in tone_data['freq']) or float(tone_data['freq'] + '0') == 0:
+            if 'freq' not in tone_data or tone_data['freq'] == '' or not all(char in '.0123456789' for char in str(tone_data['freq'])) or float(str(tone_data['freq']) + '0') == 0:
                 messages["critical"].append(f'Для элемента "Генератор тона" {tone_id} задано недопустимое значение параметра "Частота"')
                 params['tones'][tone_id]['freq'] = 0
             else:
@@ -330,7 +354,6 @@ def apply_envelope(samples: list, envelope: list) -> list:
     envelope.append((duration, 0)) # От последней заданной точки к концу звучания амплитуда снижается до 0
     SaWAppEnv = [] #Samples with applied envelope
     segm_no = 1
-    print(envelope)
     for sample_no in range(len(samples)):
         current_time = sample_no/44100
         if current_time > envelope[segm_no][0]:
@@ -415,3 +438,11 @@ def synthesize(params: dict, end_node: int=0) -> list:
                         return tone_samples[data['input']]
         if (end_node in tone_samples) and len(tone_samples[end_node]) > 0:
             return tone_samples[end_node]
+
+
+def is_valid_preset_name(name: str):
+    """
+    Проверяет строку на валидность в качестве имени пресета.
+    В имени допустимы буквы, цифры и пробел.
+    """
+    return all(char.isalnum() or char.isspace() for char in name)
