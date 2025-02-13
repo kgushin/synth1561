@@ -12,7 +12,7 @@
 <body>
   {% block js_css %}{% endblock %}
   <header>
-    <h2 style="float:left;"><a href="{{ url_for('index') }}">SYNTH1561</a></h2>
+    <h2 style="float:left; padding-top:8px;line-height:30px;"><a href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='logo.png') }}" alt="SYNTH1561" style="height:50px;"></a></h2>
     <div style="float:right; margin:20px;">
       <a href="{{ url_for('docs') }}" style="padding-right:20px;">Документация</a>
       <a href="{{ url_for('about') }}">О проекте</a>

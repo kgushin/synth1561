@@ -183,7 +183,7 @@ def prepare_params(frontend_data: dict) -> tuple:
                     messages["error"].append(
                         'Элемент "Звуковое устройство" id=' + node_id + ' не имеет входного подключения')
                 if 'duration' in node_data['data']:
-                    if all(char in ' .+0123456789' for char in node_data['data']['duration']):
+                    if all(char in ' .+0123456789' for char in str(node_data['data']['duration'])):
                         params['duration'] = float(node_data['data']['duration'])
                     else:
                         messages["error"].append(
